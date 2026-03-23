@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Hoa Tươi Thanh Ngọc",
+  "description": "Cửa hàng hoa tươi nghệ thuật tại Bình Thạnh, TP. HCM. Chuyên hoa sinh nhật, khai trương, sự kiện. Tích hợp trợ lý ảo AI tư vấn chọn hoa.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

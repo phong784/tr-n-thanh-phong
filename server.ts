@@ -1,14 +1,13 @@
-import express from 'express';
-import path from 'path';
-
-const app = express();
-app.use(express.json());
-app.use(express.static(path.resolve()));
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.resolve('index.html'));
-});
-
-export default app;
+{
+  "name": "hoatuoithanhngoc",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "path": "^0.12.7"
+  }
+}

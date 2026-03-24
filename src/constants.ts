@@ -1,13 +1,13 @@
 import { Category } from './types';
 
-export const LOGO_URL = ''; // Để trống nếu muốn dùng logo mặc định (TN)
+export const LOGO_URL = '/logo.png'; // Đường dẫn đến logo trong thư mục public
 
 export const CATEGORIES: Category[] = [
-  { id: 'bo-hoa', name: 'Bó Hoa', icon: 'Flower2', image: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&q=80&w=400&fm=webp' },
-  { id: 'hoa-khai-truong', name: 'Hoa Khai Trương', icon: 'Store', image: 'https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf?auto=format&fit=crop&q=80&w=400&fm=webp' },
+  { id: 'bo-hoa', name: 'Bó Hoa', icon: 'Gift', image: 'https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&q=80&w=400&fm=webp' },
+  { id: 'hoa-khai-truong', name: 'Hoa Khai Trương', icon: 'Award', image: 'https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf?auto=format&fit=crop&q=80&w=400&fm=webp' },
   { id: 'gio-hoa', name: 'Giỏ Hoa', icon: 'ShoppingBasket', image: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=400&fm=webp' },
-  { id: 'hoa-chia-buon', name: 'Hoa Chia Buồn', icon: 'Heart', image: 'https://images.unsplash.com/photo-1516589174184-c685266e430c?auto=format&fit=crop&q=80&w=400&fm=webp' },
-  { id: 'hoa-cuoi', name: 'Hoa Cưới', icon: 'Gem', image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=400&fm=webp' },
+  { id: 'hoa-chia-buon', name: 'Hoa Chia Buồn', icon: 'HeartHandshake', image: 'https://images.unsplash.com/photo-1516589174184-c685266e430c?auto=format&fit=crop&q=80&w=400&fm=webp' },
+  { id: 'hoa-cuoi', name: 'Hoa Cưới', icon: 'Heart', image: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=400&fm=webp' },
 ];
 
 export const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4?auto=format&fit=crop&q=80&w=800&fm=webp';

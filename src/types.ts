@@ -32,3 +32,22 @@ export type Category = {
   icon: string;
   image?: string;
 };
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
+export interface Order {
+  id?: number;
+  items: CartItem[];
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  shippingAddress: string;
+  deliveryDate: string;
+  paymentMethod: 'cod' | 'bank_transfer';
+  totalAmount: number;
+  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
+  created_at?: string;
+}

@@ -26,9 +26,13 @@ import {
   AlertCircle,
   User,
   Calendar,
-  Filter
+  Filter,
+  ShoppingBag,
+  CreditCard,
+  Truck,
+  Check
 } from 'lucide-react';
-import { Product, Category, Blog } from './types';
+import { Product, Category, Blog, CartItem, Order } from './types';
 import AIAssistant from './components/AIAssistant';
 import { CATEGORIES, CONTACT_INFO, PLACEHOLDER_IMAGE, ABOUT_US, LOGO_URL } from './constants';
 
@@ -37,6 +41,20 @@ import { CATEGORIES, CONTACT_INFO, PLACEHOLDER_IMAGE, ABOUT_US, LOGO_URL } from 
 const optimizeImageUrl = (url: string, width: number = 800) => {
   if (!url) return PLACEHOLDER_IMAGE;
   
+  // Check if it's a local URL (relative or same origin)
+  const isLocal = url.startsWith('/') || (typeof window !== 'undefined' && url.startsWith(window.location.origin));
+  const isUpload = url.includes('/uploads/');
+  const isCommonImage = url.toLowerCase().endsWith('.png') || url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg');
+
+  if (isUpload || (isLocal && isCommonImage)) {
+    // Normalize local URL to relative path for the API
+    let localPath = url;
+    if (typeof window !== 'undefined' && url.startsWith(window.location.origin)) {
+      localPath = url.replace(window.location.origin, '');
+    }
+    return `/api/img-optimize?src=${encodeURIComponent(localPath)}&w=${width}`;
+  }
+
   // Unsplash optimization
   if (url.includes('images.unsplash.com')) {
     const baseUrl = url.split('?')[0];
@@ -51,13 +69,35 @@ const optimizeImageUrl = (url: string, width: number = 800) => {
     if (baseUrl.includes('/seed/')) {
       const seedIndex = parts.indexOf('seed');
       const seed = parts[seedIndex + 1];
-      return `https://picsum.photos/seed/${seed}/${width}/${Math.round(width * 0.75)}`;
+      return `https://picsum.photos/seed/${seed}/${width}/${Math.round(width * 0.75)}.webp`;
     }
-    return `${baseUrl}/${width}/${Math.round(width * 0.75)}`;
+    return `${baseUrl}/${width}/${Math.round(width * 0.75)}.webp`;
   }
 
-  // Local uploads are already converted to WebP on the server
   return url;
+};
+
+const HighlightedText = ({ text, highlight }: { text: string, highlight: string }) => {
+  if (!highlight.trim()) {
+    return <span>{text}</span>;
+  }
+  // Escape special characters for regex
+  const escapedHighlight = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedHighlight})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <span>
+      {parts.map((part, i) => 
+        regex.test(part) ? (
+          <mark key={i} className="bg-brand-orange/30 text-brand-brown rounded-sm px-0.5 font-black">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  );
 };
 
 // --- Components ---
@@ -85,6 +125,8 @@ const AboutPage = ({ onBack }: { onBack: () => void }) => (
           <div className="rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white transform -rotate-3 aspect-[4/5]">
             <img 
               src={optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 800)} 
+              srcSet={`${optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 400)} 400w, ${optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 800)} 800w, ${optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 1200)} 1200w`}
+              sizes="(max-width: 1024px) 100vw, 50vw"
               alt="Our Story" 
               className="w-full h-full object-cover"
               loading="lazy"
@@ -270,6 +312,8 @@ const OffersPage = ({ onBack, onShopNow }: { onBack: () => void, onShopNow: () =
           <div className="group relative h-[500px] rounded-[4rem] overflow-hidden shadow-2xl">
             <img 
               src={optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 800)} 
+              srcSet={`${optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 400)} 400w, ${optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 800)} 800w, ${optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 1200)} 1200w`}
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
               alt="Special Offer 1" 
               loading="lazy"
@@ -292,6 +336,8 @@ const OffersPage = ({ onBack, onShopNow }: { onBack: () => void, onShopNow: () =
           <div className="group relative h-[500px] rounded-[4rem] overflow-hidden shadow-2xl">
             <img 
               src={optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 800)} 
+              srcSet={`${optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 400)} 400w, ${optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 800)} 800w, ${optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 1200)} 1200w`}
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
               alt="Special Offer 2" 
               loading="lazy"
@@ -337,7 +383,12 @@ const Logo = ({ className = "", onClick, logoUrl }: { className?: string, onClic
   >
     <div className="relative">
       {logoUrl ? (
-        <img src={logoUrl} alt="Logo" className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-full border-2 border-white shadow-xl" />
+        <img 
+          src={optimizeImageUrl(logoUrl, 100)} 
+          alt="Logo" 
+          className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-full border-2 border-white shadow-xl" 
+          referrerPolicy="no-referrer"
+        />
       ) : (
         <div className="w-10 h-10 md:w-12 md:h-12 bg-brand-blue rounded-full flex items-center justify-center text-white font-serif font-black text-xl md:text-2xl shadow-xl border-2 border-white transform -rotate-12">
           TN
@@ -366,6 +417,125 @@ const CategoryIcon = ({ icon, className }: { icon: string, className?: string })
   }
 };
 
+const BlogDetailPage = ({ slug, onBack }: { slug: string, onBack: () => void }) => {
+  const [blog, setBlog] = useState<Blog | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const res = await fetch(`/api/blogs/${slug}`);
+        if (res.ok) {
+          const data = await res.json();
+          setBlog(data);
+        }
+      } catch (error) {
+        console.error('Error fetching blog:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBlog();
+    window.scrollTo(0, 0);
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="pt-32 pb-24 flex items-center justify-center min-h-[60vh]">
+        <div className="w-12 h-12 border-4 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!blog) {
+    return (
+      <div className="pt-32 pb-24 flex flex-col items-center justify-center min-h-[60vh]">
+        <h2 className="text-2xl font-black text-brand-brown mb-6">Không tìm thấy bài viết</h2>
+        <button 
+          onClick={onBack}
+          className="bg-brand-brown text-white px-12 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl"
+        >
+          Quay lại
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="pt-32 pb-24 bg-brand-bg"
+    >
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="flex items-center gap-4 mb-12">
+          <button 
+            onClick={onBack}
+            className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px]">Góc Nhìn Nghệ Thuật</span>
+        </div>
+
+        <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-brand-brown/10">
+            <div className="h-80 md:h-[600px] relative">
+              <img 
+                src={optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 1200)} 
+                srcSet={`${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 400)} 400w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 800)} 800w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 1200)} 1200w`}
+                sizes="100vw"
+                alt={blog.title}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-brown/90 via-brand-brown/20 to-transparent flex items-end p-10 md:p-16">
+              <div className="max-w-3xl">
+                <span className="bg-brand-blue text-white text-[10px] font-black px-5 py-2 rounded-full uppercase tracking-widest mb-6 inline-block shadow-xl">
+                  {new Date(blog.created_at).toLocaleDateString('vi-VN')}
+                </span>
+                <h1 className="text-4xl md:text-7xl font-serif font-black text-white leading-tight">{blog.title}</h1>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-10 md:p-16">
+            <div className="flex flex-wrap items-center gap-8 mb-12 text-brand-brown/40 text-[10px] font-black uppercase tracking-[0.2em]">
+              <span className="flex items-center gap-2"><Store size={16} className="text-brand-blue" /> Tác giả: {blog.author}</span>
+              <span className="flex items-center gap-2"><Clock size={16} className="text-brand-blue" /> 5 phút đọc</span>
+              <span className="flex items-center gap-2"><Calendar size={16} className="text-brand-blue" /> {new Date(blog.created_at).toLocaleDateString('vi-VN')}</span>
+            </div>
+            
+            <div className="prose prose-stone max-w-none text-brand-brown/70 leading-relaxed text-xl font-medium italic serif">
+              {blog.content.split('\n').map((para, i) => (
+                <p key={i} className="mb-8">{para}</p>
+              ))}
+            </div>
+
+            <div className="mt-20 pt-10 border-t border-brand-brown/5 flex flex-wrap justify-between items-center gap-8">
+              <div className="flex gap-6">
+                <button className="text-brand-blue hover:text-brand-orange font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all">
+                  <Facebook size={20} /> Chia sẻ
+                </button>
+                <button className="text-brand-blue hover:text-brand-orange font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all">
+                  <Instagram size={20} /> Instagram
+                </button>
+              </div>
+              <button 
+                onClick={onBack}
+                className="bg-brand-brown text-white px-12 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
+              >
+                Quay lại danh sách
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
@@ -378,12 +548,30 @@ export default function App() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentBlogPage, setCurrentBlogPage] = useState(1);
   const [sortBy, setSortBy] = useState<'newest' | 'name-asc'>('newest');
-  const [currentView, setCurrentView] = useState<'home' | 'about' | 'contact' | 'offers'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'about' | 'contact' | 'offers' | 'blog'>('home');
+  const [selectedBlogSlug, setSelectedBlogSlug] = useState<string | null>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState(1);
+  const [orderForm, setOrderForm] = useState<Partial<Order>>({
+    customerName: '',
+    customerPhone: '',
+    customerEmail: '',
+    shippingAddress: '',
+    deliveryDate: '',
+    paymentMethod: 'cod',
+  });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const ITEMS_PER_PAGE = 12;
+  const BLOGS_PER_PAGE = 6;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -394,6 +582,10 @@ export default function App() {
         setCurrentView('contact');
       } else if (hash === '#offers') {
         setCurrentView('offers');
+      } else if (hash.startsWith('#blog/')) {
+        const slug = hash.replace('#blog/', '');
+        setSelectedBlogSlug(slug);
+        setCurrentView('blog');
       } else if (hash === '#home' || hash === '') {
         setCurrentView('home');
       }
@@ -405,9 +597,32 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  useEffect(() => {
+    if (selectedProduct) {
+      document.title = selectedProduct.name;
+      
+      // Update meta tags for SEO/Social Sharing
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) metaDescription.setAttribute('content', selectedProduct.description || `Mô tả sản phẩm ${selectedProduct.name}, ý nghĩa và màu sắc hoa`);
+      
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', selectedProduct.name);
+      
+      const ogDescription = document.querySelector('meta[property="og:description"]');
+      if (ogDescription) ogDescription.setAttribute('content', selectedProduct.description || `Mô tả sản phẩm ${selectedProduct.name}, ý nghĩa và màu sắc hoa`);
+      
+      const ogImage = document.querySelector('meta[property="og:image"]');
+      if (ogImage) ogImage.setAttribute('content', selectedProduct.image || '');
+    } else {
+      document.title = "Hoa Tươi Thanh Ngọc - Nghệ Thuật Hoa Tươi Bình Thạnh";
+    }
+  }, [selectedProduct]);
+
   // Admin State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBlogModal, setShowBlogModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
     name: '',
     price: undefined,
@@ -422,16 +637,69 @@ export default function App() {
     is_new: 1,
     is_best_seller: 0
   });
+  const [newBlog, setNewBlog] = useState<Partial<Blog>>({
+    title: '',
+    slug: '',
+    content: '',
+    excerpt: '',
+    image: '',
+    author: 'Admin'
+  });
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [activeDetailImage, setActiveDetailImage] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [bulkStatus, setBulkStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [showMeaningTooltip, setShowMeaningTooltip] = useState(false);
+
+  const relatedProducts = selectedProduct 
+    ? products
+        .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
+        .slice(0, 3)
+    : [];
 
   useEffect(() => {
     fetchProducts();
     fetchBlogs();
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error('Fetch settings error:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2) {
+      const filtered = products.filter(p => 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5);
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery, products]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -483,6 +751,147 @@ export default function App() {
     }
   };
 
+  const addToCart = (product: Product) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+    
+    // Show toast
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-brand-blue text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce font-black text-xs uppercase tracking-widest';
+    toast.innerText = `Đã thêm ${product.name} vào giỏ hàng`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  };
+
+  const removeFromCart = (productId: number) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  };
+
+  const updateCartQuantity = (productId: number, delta: number) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.product.id === productId) {
+          const newQty = Math.max(1, item.quantity + delta);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      })
+    );
+  };
+
+  const calculateTotal = () => {
+    return cart.reduce((acc, item) => acc + (item.product.price || 0) * item.quantity, 0);
+  };
+
+  const formatPrice = (price?: number) => {
+    if (!price || price === 0) return 'Liên hệ';
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  };
+
+  const validateCheckoutStep = (step: number) => {
+    const errors: Record<string, string> = {};
+    if (step === 2) {
+      if (!orderForm.customerName?.trim()) errors.customerName = 'Vui lòng nhập họ tên';
+      if (!orderForm.customerPhone?.trim()) errors.customerPhone = 'Vui lòng nhập số điện thoại';
+      else if (!/^\d{10,11}$/.test(orderForm.customerPhone.trim())) errors.customerPhone = 'Số điện thoại không hợp lệ';
+      if (!orderForm.shippingAddress?.trim()) errors.shippingAddress = 'Vui lòng nhập địa chỉ giao hàng';
+      if (!orderForm.deliveryDate) errors.deliveryDate = 'Vui lòng chọn ngày giao hoa';
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const submitOrder = async () => {
+    setUploading(true);
+    try {
+      const orderData = {
+        customerName: orderForm.name,
+        phone: orderForm.phone,
+        address: orderForm.address,
+        deliveryDate: orderForm.deliveryDate,
+        paymentMethod: orderForm.paymentMethod,
+        items: cart.map(item => ({
+          productId: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity
+        })),
+        totalAmount: calculateTotal()
+      };
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!res.ok) throw new Error('Failed to place order');
+      
+      const data = await res.json();
+      if (data.success) {
+        setCheckoutStep(4); // Success step
+        setCart([]); // Clear cart
+      }
+    } catch (error) {
+      alert('Lỗi khi đặt hàng. Vui lòng thử lại.');
+      console.error('Order error:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
+  const uploadFile = async (file: File): Promise<string> => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const contentType = res.headers.get('content-type');
+      const text = await res.text();
+      
+      if (!res.ok) {
+        let errorMessage = `Upload failed with status ${res.status}`;
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = JSON.parse(text);
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            console.error('Failed to parse error JSON:', text);
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const data = JSON.parse(text);
+          return data.url;
+        } catch (e) {
+          console.error('Failed to parse upload response as JSON:', text);
+          throw new Error('Server returned invalid JSON response');
+        }
+      } else {
+        console.error('Server returned non-JSON response:', contentType, text.substring(0, 100));
+        throw new Error('Server returned invalid response format');
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean = true) => {
     const files = e.target.files;
@@ -492,14 +901,8 @@ export default function App() {
     try {
       const uploadedUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        const formData = new FormData();
-        formData.append('image', files[i]);
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        const data = await res.json();
-        uploadedUrls.push(data.url);
+        const url = await uploadFile(files[i]);
+        uploadedUrls.push(url);
       }
 
       if (isMain) {
@@ -511,7 +914,8 @@ export default function App() {
         setNewProduct({ ...newProduct, images: JSON.stringify(updatedImages) });
       }
     } catch (error) {
-      alert('Lỗi tải ảnh');
+      console.error('Image upload error:', error);
+      alert('Lỗi tải ảnh: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
     } finally {
       setUploading(false);
     }
@@ -559,8 +963,17 @@ export default function App() {
         fetchProducts();
         alert(editingProduct ? 'Cập nhật sản phẩm thành công!' : 'Thêm sản phẩm thành công!');
       } else {
-        const data = await res.json();
-        alert(`Lỗi: ${data.error || 'Không thể lưu sản phẩm'}`);
+        let errorMessage = 'Không thể lưu sản phẩm';
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } else {
+          const text = await res.text();
+          console.error('Non-JSON error response:', text);
+          errorMessage = `Lỗi hệ thống (${res.status})`;
+        }
+        alert(`Lỗi: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Save product error:', error);
@@ -598,6 +1011,57 @@ export default function App() {
     }
   };
 
+  const handleSaveSettings = async (newSettings: Record<string, string>) => {
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings),
+      });
+      if (res.ok) {
+        setSettings({ ...settings, ...newSettings });
+        alert('Cập nhật cài đặt thành công!');
+      }
+    } catch (error) {
+      console.error('Save settings error:', error);
+      alert('Lỗi khi lưu cài đặt');
+    }
+  };
+
+  const handleSaveBlog = async () => {
+    try {
+      const method = editingBlog ? 'PUT' : 'POST';
+      const url = editingBlog ? `/api/blogs/${editingBlog.id}` : '/api/blogs';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBlog),
+      });
+
+      if (res.ok) {
+        setShowBlogModal(false);
+        setEditingBlog(null);
+        setNewBlog({
+          title: '',
+          slug: '',
+          content: '',
+          excerpt: '',
+          image: '',
+          author: 'Admin'
+        });
+        fetchBlogs();
+        alert(editingBlog ? 'Cập nhật bài viết thành công!' : 'Thêm bài viết thành công!');
+      } else {
+        const data = await res.json();
+        alert('Lỗi: ' + (data.error || 'Không thể lưu bài viết'));
+      }
+    } catch (error) {
+      console.error('Save blog error:', error);
+      alert('Lỗi khi lưu bài viết');
+    }
+  };
+
   const handleBulkUpload = async () => {
     if (!bulkFile) return;
     setUploading(true);
@@ -623,12 +1087,12 @@ export default function App() {
         method: 'POST',
         body: formData,
       });
-      const data = await res.json();
       
       clearInterval(progressInterval);
       setUploadProgress(100);
 
       if (res.ok) {
+        const data = await res.json();
         setBulkStatus({ type: 'success', message: `Tải lên thành công ${data.count} sản phẩm!` });
         fetchProducts();
         setTimeout(() => {
@@ -637,7 +1101,15 @@ export default function App() {
           setBulkFile(null);
         }, 2000);
       } else {
-        setBulkStatus({ type: 'error', message: data.error || 'Lỗi xử lý file' });
+        let errorMessage = 'Lỗi xử lý file';
+        try {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } catch (e) {
+          const text = await res.text();
+          console.error('Bulk upload error response:', text);
+        }
+        setBulkStatus({ type: 'error', message: errorMessage });
         setUploadProgress(0);
       }
     } catch (error) {
@@ -693,7 +1165,7 @@ export default function App() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-brand-bg/90 backdrop-blur-xl border-b border-brand-brown/5">
         <div className="max-w-7xl mx-auto px-4 h-20 md:h-24 flex items-center justify-between">
-          <Logo onClick={() => setCurrentView('home')} logoUrl={LOGO_URL} />
+          <Logo onClick={() => setCurrentView('home')} logoUrl={settings.logo_url || LOGO_URL} />
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-10 text-[11px] font-black uppercase tracking-[0.2em] text-brand-brown/60">
@@ -753,9 +1225,37 @@ export default function App() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => {
+                const newAdminState = !isAdmin;
+                setIsAdmin(newAdminState);
+                const toast = document.createElement('div');
+                toast.className = `fixed bottom-4 right-4 ${newAdminState ? 'bg-emerald-600' : 'bg-stone-600'} text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce font-black text-xs uppercase tracking-widest`;
+                toast.innerText = newAdminState ? "Đã bật chế độ Quản Trị" : "Đã thoát chế độ Quản Trị";
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+              }}
+              className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isAdmin ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-brand-brown/5 text-brand-brown/40 hover:bg-brand-brown/10'}`}
+              title={isAdmin ? "Thoát chế độ Quản Trị" : "Chế độ Quản Trị"}
+            >
+              <Settings size={14} />
+              {isAdmin ? 'Admin' : 'User'}
+            </button>
             <button className="p-3 hover:bg-brand-paper rounded-2xl text-brand-brown transition-all">
               <Search size={20} />
             </button>
+            <button 
+              onClick={() => setShowCart(true)}
+              className="relative w-12 h-12 rounded-2xl bg-brand-paper border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg group"
+            >
+              <ShoppingBag size={20} />
+              {cart.length > 0 && (
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-brand-orange text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg animate-bounce">
+                  {cart.reduce((acc, item) => acc + item.quantity, 0)}
+                </span>
+              )}
+            </button>
+
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="lg:hidden p-3 hover:bg-brand-paper rounded-2xl text-brand-brown transition-all"
@@ -777,7 +1277,7 @@ export default function App() {
           >
             <div className="flex flex-col gap-6 text-xl font-semibold text-brand-brown">
               <div className="mb-8 border-b border-brand-brown/5 pb-8">
-                <Logo onClick={() => { setCurrentView('home'); setIsMenuOpen(false); window.location.hash = '#home'; }} logoUrl={LOGO_URL} />
+                <Logo onClick={() => { setCurrentView('home'); setIsMenuOpen(false); window.location.hash = '#home'; }} logoUrl={settings.logo_url || LOGO_URL} />
               </div>
               <a href="#home" onClick={() => { setCurrentView('home'); setIsMenuOpen(false); }} className="text-left hover:text-brand-blue transition-colors">Trang Chủ</a>
               <a href="#products" onClick={() => { 
@@ -807,14 +1307,20 @@ export default function App() {
                   setIsAdmin(newAdminState); 
                   setIsMenuOpen(false); 
                   const toast = document.createElement('div');
-                  toast.className = `fixed bottom-4 right-4 ${newAdminState ? 'bg-emerald-600' : 'bg-stone-600'} text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce`;
+                  toast.className = `fixed bottom-4 right-4 ${newAdminState ? 'bg-emerald-600' : 'bg-stone-600'} text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce font-black text-xs uppercase tracking-widest`;
                   toast.innerText = newAdminState ? "Đã bật chế độ Quản Trị" : "Đã thoát chế độ Quản Trị";
                   document.body.appendChild(toast);
                   setTimeout(() => toast.remove(), 2000);
                 }}
-                className="flex items-center gap-2 text-stone-400 text-sm pt-6 border-t border-stone-100"
+                className={`flex items-center justify-between p-6 rounded-3xl transition-all ${isAdmin ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-brown/5 text-brand-brown/40'}`}
               >
-                <Settings size={16} /> {isAdmin ? 'Thoát Quản Trị' : 'Chế độ Quản Trị'}
+                <div className="flex items-center gap-3">
+                  <Settings size={20} />
+                  <span className="font-black uppercase tracking-widest text-xs">{isAdmin ? 'Thoát Quản Trị' : 'Chế độ Quản Trị'}</span>
+                </div>
+                <div className={`w-12 h-6 rounded-full relative transition-all ${isAdmin ? 'bg-emerald-500' : 'bg-stone-300'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isAdmin ? 'left-7' : 'left-1'}`}></div>
+                </div>
               </button>
             </div>
           </motion.div>
@@ -832,13 +1338,20 @@ export default function App() {
             {/* Hero Section */}
             <section className="relative h-[80vh] md:h-[90vh] flex items-center overflow-hidden bg-brand-paper">
               <div className="absolute inset-0 z-0">
-                <img 
-                  src={optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 1920)} 
-                  alt="Flower Shop" 
-                  className="w-full h-full object-cover opacity-60 mix-blend-multiply"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
+                <picture>
+                  <source 
+                    type="image/webp"
+                    srcSet={`${optimizeImageUrl(settings.hero_image_url || "/hero-bg.jpg", 640)} 640w, ${optimizeImageUrl(settings.hero_image_url || "/hero-bg.jpg", 1024)} 1024w, ${optimizeImageUrl(settings.hero_image_url || "/hero-bg.jpg", 1920)} 1920w`}
+                    sizes="100vw"
+                  />
+                  <img 
+                    src={optimizeImageUrl(settings.hero_image_url || "/hero-bg.jpg", 1920)} 
+                    alt="Hoa Tươi Thanh Ngọc" 
+                    className="w-full h-full object-cover opacity-60 mix-blend-multiply"
+                    referrerPolicy="no-referrer"
+                    loading="eager"
+                  />
+                </picture>
                 <div className="absolute inset-0 bg-gradient-to-b from-brand-bg/20 via-transparent to-brand-bg"></div>
               </div>
 
@@ -881,9 +1394,11 @@ export default function App() {
                   >
                     <div className="relative z-10 rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white transform rotate-3 aspect-[4/5]">
                       <img 
-                        src="https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?auto=format&fit=crop&q=80&w=800" 
+                        src={optimizeImageUrl(settings.hero_image_url || "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11", 800)} 
                         alt="Featured Bouquet" 
                         className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
                       />
                     </div>
                     <div className="absolute -top-10 -right-10 w-64 h-64 bg-brand-orange/10 rounded-full blur-3xl"></div>
@@ -910,9 +1425,11 @@ export default function App() {
                     className={`group relative h-60 sm:h-80 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden transition-all duration-500 ${activeCategory === 'all' ? 'ring-4 ring-brand-orange ring-offset-4 scale-[1.02] shadow-2xl' : 'hover:scale-[1.02] shadow-xl'}`}
                   >
                     <img 
-                      src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=400" 
+                      src={optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 400)} 
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                       alt="Tất cả"
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-brand-brown/90 via-brand-brown/20 to-transparent"></div>
                     <div className="absolute bottom-6 sm:bottom-8 left-6 sm:left-8 right-6 sm:right-8 text-left">
@@ -928,7 +1445,7 @@ export default function App() {
                       className={`group relative h-60 sm:h-80 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden transition-all duration-500 ${activeCategory === cat.id ? 'ring-4 ring-brand-orange ring-offset-4 scale-[1.02] shadow-2xl' : 'hover:scale-[1.02] shadow-xl'}`}
                     >
                       <img 
-                        src={optimizeImageUrl(cat.image || PLACEHOLDER_IMAGE, 400)} 
+                        src={optimizeImageUrl(settings[`category_image_${cat.id}`] || cat.image || PLACEHOLDER_IMAGE, 400)} 
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                         alt={cat.name}
                         loading="lazy"
@@ -988,6 +1505,12 @@ export default function App() {
                           >
                             <Upload size={16} /> Tải Lên Batch
                           </button>
+                          <button 
+                            onClick={() => setShowSettingsModal(true)}
+                            className="w-full py-4 bg-brand-bg text-brand-brown rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue hover:text-white transition-all flex items-center justify-center gap-2 border border-brand-brown/5"
+                          >
+                            <Settings size={16} /> Cài Đặt Trang Web
+                          </button>
                         </div>
                       )}
                     </div>
@@ -997,15 +1520,72 @@ export default function App() {
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-12 gap-6">
                       <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="relative flex-1 sm:w-80">
+                        <div className="relative flex-1 sm:w-80" ref={searchRef}>
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-brown/30" size={18} />
                           <input 
                             type="text"
                             placeholder="Tìm kiếm mẫu hoa..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              setShowSuggestions(true);
+                            }}
+                            onFocus={() => setShowSuggestions(true)}
                             className="w-full pl-12 pr-4 py-4 rounded-2xl border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all bg-white shadow-sm font-medium text-base"
                           />
+                          
+                          {/* Auto-suggestions Dropdown */}
+                          <AnimatePresence>
+                            {showSuggestions && suggestions.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-brand-brown/5 overflow-hidden z-50"
+                              >
+                                <div className="p-2">
+                                  {suggestions.map((product) => (
+                                    <button
+                                      key={product.id}
+                                      onClick={() => {
+                                        setSearchQuery(product.name);
+                                        setShowSuggestions(false);
+                                        setSelectedProduct(product);
+                                      }}
+                                      className="w-full flex items-center gap-4 p-3 hover:bg-brand-bg rounded-xl transition-all text-left group"
+                                    >
+                                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-brand-brown/5">
+                                        <img 
+                                          src={optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 100)} 
+                                          alt={product.name}
+                                          className="w-full h-full object-cover"
+                                          referrerPolicy="no-referrer"
+                                          loading="lazy"
+                                        />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-black text-brand-brown truncate group-hover:text-brand-blue transition-colors">
+                                          <HighlightedText text={product.name} highlight={searchQuery} />
+                                        </h4>
+                                        <p className="text-[10px] text-brand-brown/40 font-bold uppercase tracking-wider">
+                                          {CATEGORIES.find(c => c.id === product.category)?.name}
+                                        </p>
+                                      </div>
+                                      <ChevronRight size={14} className="text-brand-brown/20 group-hover:text-brand-blue transition-all" />
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="bg-brand-bg p-3 border-t border-brand-brown/5">
+                                  <button 
+                                    onClick={() => setShowSuggestions(false)}
+                                    className="w-full text-center text-[10px] font-black text-brand-blue uppercase tracking-widest hover:text-brand-orange transition-colors"
+                                  >
+                                    Xem tất cả kết quả
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                         <button 
                           onClick={() => setIsFilterOpen(true)}
@@ -1065,16 +1645,20 @@ export default function App() {
                                 whileHover={{ y: -10 }}
                                 key={product.id}
                                 onClick={() => setSelectedProduct(product)}
-                                className="group bg-white rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden border border-brand-brown/5 hover:shadow-2xl hover:shadow-brand-brown/10 transition-all duration-500 relative cursor-pointer flex flex-col h-full"
+                                className="group bg-white rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden border border-brand-brown/5 hover:shadow-2xl hover:shadow-brand-brown/10 transition-all duration-500 relative cursor-pointer flex flex-col h-full"
                               >
-                                <div className="relative aspect-[4/5] overflow-hidden">
+                                <div className="relative aspect-[4/5] overflow-hidden bg-brand-brown/5">
                                   <img 
                                     src={optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 600)} 
                                     alt={product.alt_text || `${product.name} - ${product.meaning || ''} - Màu ${product.color || ''} - Size ${product.size || ''}`} 
                                     title={`${product.name} - ${product.meaning || ''}`}
-                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 opacity-0"
                                     referrerPolicy="no-referrer"
                                     loading="lazy"
+                                    onLoad={(e) => {
+                                      e.currentTarget.classList.remove('opacity-0');
+                                      e.currentTarget.parentElement?.classList.remove('bg-brand-brown/5');
+                                    }}
                                   />
                                   
                                   {/* Badges */}
@@ -1093,18 +1677,20 @@ export default function App() {
 
                                   {/* Admin Actions */}
                                   {isAdmin && (
-                                    <div className="absolute top-6 right-6 flex gap-2 z-20">
+                                    <div className="absolute top-3 sm:top-6 right-3 sm:right-6 flex gap-2 z-20">
                                       <button 
                                         onClick={(e) => { e.stopPropagation(); handleEditProduct(product); }}
-                                        className="p-3 bg-white/90 text-brand-brown rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-blue hover:text-white shadow-xl backdrop-blur-sm"
+                                        className="p-2 sm:p-3 bg-brand-blue text-white rounded-xl transition-all hover:bg-brand-brown shadow-xl backdrop-blur-sm border border-white/20"
+                                        title="Chỉnh sửa"
                                       >
-                                        <Settings size={18} />
+                                        <Settings size={14} className="sm:size-[18px]" />
                                       </button>
                                       <button 
                                         onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }}
-                                        className="p-3 bg-white/90 text-red-600 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white shadow-xl backdrop-blur-sm"
+                                        className="p-2 sm:p-3 bg-red-600 text-white rounded-xl transition-all hover:bg-red-700 shadow-xl backdrop-blur-sm border border-white/20"
+                                        title="Xóa sản phẩm"
                                       >
-                                        <Trash2 size={18} />
+                                        <Trash2 size={14} className="sm:size-[18px]" />
                                       </button>
                                     </div>
                                   )}
@@ -1117,21 +1703,25 @@ export default function App() {
                                   </div>
                                 </div>
 
-                                <div className="p-4 sm:p-10 flex flex-col flex-1">
-                                  <div className="mb-3 sm:mb-6">
+                                <div className="p-3 sm:p-10 flex flex-col flex-1">
+                                  <div className="mb-2 sm:mb-6">
                                     <div className="flex justify-between items-start gap-2 sm:gap-4 mb-1 sm:mb-2">
-                                      <h3 className="font-serif font-black text-base sm:text-2xl text-brand-brown group-hover:text-brand-blue transition-colors leading-tight line-clamp-2">{product.name}</h3>
+                                      <h3 className="font-serif font-black text-sm sm:text-2xl text-brand-brown group-hover:text-brand-blue transition-colors leading-tight line-clamp-2">
+                                        <HighlightedText text={product.name} highlight={searchQuery} />
+                                      </h3>
                                       <div className="flex items-center text-brand-orange bg-brand-orange/5 px-1.5 sm:px-3 py-0.5 sm:py-1.5 rounded-lg sm:rounded-xl shrink-0">
                                         <Star size={8} className="sm:size-3" fill="currentColor" />
                                         <span className="text-[8px] sm:text-[10px] font-black ml-1 sm:ml-1.5">5.0</span>
                                       </div>
                                     </div>
-                                    <span className="text-[8px] sm:text-[10px] font-black text-brand-brown/30 uppercase tracking-[0.2em]">
+                                    <span className="text-[7px] sm:text-[10px] font-black text-brand-brown/30 uppercase tracking-[0.2em]">
                                       {CATEGORIES.find(c => c.id === product.category)?.name || 'Hoa Tươi'}
                                     </span>
                                   </div>
 
-                                  <p className="hidden sm:block text-brand-brown/60 text-xs sm:text-sm mb-6 sm:mb-8 line-clamp-2 leading-relaxed flex-1 font-medium">{product.description}</p>
+                                  <p className="hidden sm:block text-brand-brown/60 text-xs sm:text-sm mb-6 sm:mb-8 line-clamp-2 leading-relaxed flex-1 font-medium">
+                                    <HighlightedText text={product.description || ''} highlight={searchQuery} />
+                                  </p>
                                   
                                   <div className="space-y-2 mb-6">
                                     {product.meaning && (
@@ -1156,19 +1746,19 @@ export default function App() {
                                     </div>
                                   </div>
                                   
-                                  <div className="flex items-center justify-between pt-4 sm:pt-8 border-t border-brand-brown/5 mt-auto">
+                                  <div className="flex items-center justify-between pt-3 sm:pt-8 border-t border-brand-brown/5 mt-auto">
                                     <div className="flex flex-col">
-                                      <span className="text-[7px] sm:text-[9px] font-black text-brand-brown/30 uppercase tracking-widest mb-0.5 sm:mb-1">Tình trạng</span>
-                                      <span className="text-sm sm:text-lg font-serif font-black text-brand-blue tracking-tight">
+                                      <span className="text-[6px] sm:text-[9px] font-black text-brand-brown/30 uppercase tracking-widest mb-0.5 sm:mb-1">Tình trạng</span>
+                                      <span className="text-xs sm:text-lg font-serif font-black text-brand-blue tracking-tight">
                                         Liên hệ báo giá
                                       </span>
                                     </div>
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); setCurrentView('contact'); window.location.hash = '#contact'; }}
-                                      className="bg-brand-brown text-brand-bg px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-2xl shadow-brand-brown/20 hover:bg-brand-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                                      className="bg-brand-brown text-brand-bg px-3 sm:px-6 py-1.5 sm:py-3 rounded-lg sm:rounded-2xl shadow-2xl shadow-brand-brown/20 hover:bg-brand-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2"
                                     >
-                                      <Phone size={14} className="sm:size-5" />
-                                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Liên hệ</span>
+                                      <Phone size={12} className="sm:size-5" />
+                                      <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest">Liên hệ</span>
                                     </button>
                                   </div>
                                 </div>
@@ -1221,24 +1811,51 @@ export default function App() {
                     <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Kiến thức & Cảm hứng</span>
                     <h2 className="text-4xl md:text-6xl font-serif font-black text-brand-brown leading-tight">Góc Nhìn Nghệ Thuật</h2>
                   </div>
-                  <p className="text-brand-brown/50 font-medium max-w-md text-lg">
-                    Khám phá những bí quyết chăm sóc hoa, ý nghĩa các loài hoa và những câu chuyện đầy cảm hứng từ thế giới hoa tươi.
-                  </p>
+                  <div className="flex flex-col items-end gap-6">
+                    <p className="text-brand-brown/50 font-medium max-w-md text-lg text-right">
+                      Khám phá những bí quyết chăm sóc hoa, ý nghĩa các loài hoa và những câu chuyện đầy cảm hứng từ thế giới hoa tươi.
+                    </p>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => {
+                          setEditingBlog(null);
+                          setNewBlog({
+                            title: '',
+                            slug: '',
+                            content: '',
+                            excerpt: '',
+                            image: '',
+                            author: 'Admin'
+                          });
+                          setShowBlogModal(true);
+                        }}
+                        className="px-8 py-4 bg-brand-blue text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown transition-all shadow-xl shadow-brand-blue/20 flex items-center gap-3"
+                      >
+                        <Plus size={18} /> Thêm Bài Viết
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                  {blogs.map((blog) => (
+                  {blogs.slice((currentBlogPage - 1) * BLOGS_PER_PAGE, currentBlogPage * BLOGS_PER_PAGE).map((blog) => (
                     <motion.div 
                       key={blog.id}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      onClick={() => setSelectedBlog(blog)}
+                      onClick={() => {
+                        window.location.hash = `#blog/${blog.slug}`;
+                        setSelectedBlogSlug(blog.slug);
+                        setCurrentView('blog');
+                      }}
                       className="group bg-white rounded-[2.5rem] overflow-hidden border border-brand-brown/5 hover:shadow-2xl hover:shadow-brand-brown/10 transition-all duration-500 cursor-pointer flex flex-col h-full"
                     >
                       <div className="relative aspect-[16/10] overflow-hidden">
                         <img 
                           src={optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 600)} 
+                          srcSet={`${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 400)} 400w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 800)} 800w`}
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           alt={blog.title} 
                           className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                           referrerPolicy="no-referrer"
@@ -1250,18 +1867,31 @@ export default function App() {
                           </span>
                         </div>
                         {isAdmin && (
-                          <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              if(confirm('Xóa bài viết này?')) {
-                                fetch(`/api/blogs/${blog.id}`, { method: 'DELETE' })
-                                  .then(() => fetchBlogs());
-                              }
-                            }}
-                            className="absolute top-6 right-6 p-3 bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-xl z-10 hover:bg-red-600"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all z-10">
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setEditingBlog(blog);
+                                setNewBlog({ ...blog });
+                                setShowBlogModal(true);
+                              }}
+                              className="p-3 bg-brand-blue text-white rounded-xl shadow-xl hover:bg-brand-brown"
+                            >
+                              <Settings size={18} />
+                            </button>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if(confirm('Xóa bài viết này?')) {
+                                  fetch(`/api/blogs/${blog.id}`, { method: 'DELETE' })
+                                    .then(() => fetchBlogs());
+                                }
+                              }}
+                              className="p-3 bg-red-500 text-white rounded-xl shadow-xl hover:bg-red-600"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className="p-10 flex flex-col flex-1">
@@ -1288,6 +1918,53 @@ export default function App() {
                     </motion.div>
                   ))}
                 </div>
+
+                {/* Blog Pagination */}
+                {blogs.length > BLOGS_PER_PAGE && (
+                  <div className="mt-20 flex flex-col items-center gap-8">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => {
+                          setCurrentBlogPage(prev => Math.max(1, prev - 1));
+                          document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        disabled={currentBlogPage === 1}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all border ${currentBlogPage === 1 ? 'border-brand-brown/5 text-brand-brown/20' : 'border-brand-brown/10 text-brand-brown hover:bg-brand-brown hover:text-white shadow-xl shadow-brand-brown/5'}`}
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      
+                      <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-brand-brown/5 shadow-sm">
+                        {Array.from({ length: Math.ceil(blogs.length / BLOGS_PER_PAGE) }).map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setCurrentBlogPage(i + 1);
+                              document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all ${currentBlogPage === i + 1 ? 'bg-brand-brown text-brand-bg shadow-lg' : 'text-brand-brown/40 hover:bg-brand-bg hover:text-brand-brown'}`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button 
+                        onClick={() => {
+                          setCurrentBlogPage(prev => Math.min(Math.ceil(blogs.length / BLOGS_PER_PAGE), prev + 1));
+                          document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        disabled={currentBlogPage === Math.ceil(blogs.length / BLOGS_PER_PAGE)}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all border ${currentBlogPage === Math.ceil(blogs.length / BLOGS_PER_PAGE) ? 'border-brand-brown/5 text-brand-brown/20' : 'border-brand-brown/10 text-brand-brown hover:bg-brand-brown hover:text-white shadow-xl shadow-brand-brown/5'}`}
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </div>
+                    <p className="text-[10px] font-black text-brand-brown/30 uppercase tracking-[0.2em]">
+                      Trang {currentBlogPage} / {Math.ceil(blogs.length / BLOGS_PER_PAGE)}
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -1342,17 +2019,27 @@ export default function App() {
           </motion.div>
         )}
 
-        {currentView === 'about' && <AboutPage onBack={() => setCurrentView('home')} />}
-        {currentView === 'contact' && <ContactPage onBack={() => setCurrentView('home')} />}
+        {currentView === 'about' && <AboutPage onBack={() => { window.location.hash = '#home'; setCurrentView('home'); }} />}
+        {currentView === 'contact' && <ContactPage onBack={() => { window.location.hash = '#home'; setCurrentView('home'); }} />}
         {currentView === 'offers' && (
           <OffersPage 
-            onBack={() => setCurrentView('home')} 
+            onBack={() => { window.location.hash = '#home'; setCurrentView('home'); }} 
             onShopNow={() => {
+              window.location.hash = '#home';
               setCurrentView('home');
               setTimeout(() => {
                 document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
               }, 100);
             }}
+          />
+        )}
+        {currentView === 'blog' && selectedBlogSlug && (
+          <BlogDetailPage 
+            slug={selectedBlogSlug} 
+            onBack={() => { 
+              window.location.hash = '#home'; 
+              setCurrentView('home'); 
+            }} 
           />
         )}
       </AnimatePresence>
@@ -1505,12 +2192,12 @@ export default function App() {
                   const newAdminState = !isAdmin;
                   setIsAdmin(newAdminState);
                   const toast = document.createElement('div');
-                  toast.className = `fixed bottom-4 right-4 ${newAdminState ? 'bg-brand-blue' : 'bg-brand-brown'} text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce font-black uppercase tracking-widest text-[10px]`;
+                  toast.className = `fixed bottom-4 right-4 ${newAdminState ? 'bg-emerald-600' : 'bg-stone-600'} text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce font-black text-xs uppercase tracking-widest`;
                   toast.innerText = newAdminState ? "Đã bật chế độ Quản Trị" : "Đã thoát chế độ Quản Trị";
                   document.body.appendChild(toast);
                   setTimeout(() => toast.remove(), 2000);
                 }}
-                className="hover:text-brand-blue transition-all flex items-center gap-2"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isAdmin ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'hover:text-brand-blue'}`}
               >
                 <Settings size={12} /> {isAdmin ? 'Thoát Quản Trị' : 'Quản Trị'}
               </button>
@@ -1833,16 +2520,16 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-brand-bg rounded-[3rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row border border-brand-brown/10"
+              className="relative bg-brand-bg rounded-[2rem] sm:rounded-[3rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row border border-brand-brown/10"
             >
               <button 
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 z-10 p-3 bg-white/80 backdrop-blur-sm rounded-2xl hover:bg-white transition-all shadow-lg text-brand-brown/40 hover:text-brand-orange"
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-10 p-2 md:p-3 bg-white/80 backdrop-blur-sm rounded-xl md:rounded-2xl hover:bg-white transition-all shadow-lg text-brand-brown/40 hover:text-brand-orange"
               >
-                <X size={24} />
+                <X size={20} className="md:size-6" />
               </button>
               
-              <div className="w-full md:w-1/2 h-[350px] md:h-auto relative flex flex-col">
+              <div className="w-full md:w-1/2 h-[300px] md:h-auto relative flex flex-col">
                 <div className="flex-1 relative overflow-hidden group/main">
                   <AnimatePresence mode="wait">
                     <motion.img 
@@ -1917,155 +2604,175 @@ export default function App() {
                 )}
               </div>
               
-              <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col">
-                <div className="mb-10">
-                  <span className="text-brand-blue font-black text-[10px] uppercase tracking-[0.3em] mb-4 block">
+              <div className="w-full md:w-1/2 p-6 md:p-16 flex flex-col overflow-y-auto max-h-[90vh] md:max-h-none">
+                <header className="mb-6 md:mb-10">
+                  <span className="text-brand-blue font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] mb-2 md:mb-4 block">
                     {CATEGORIES.find(c => c.id === selectedProduct.category)?.name || 'Sản phẩm'}
                   </span>
-                  <h3 className="text-3xl md:text-5xl font-black text-brand-brown mb-6 leading-tight">{selectedProduct.name}</h3>
-                  <div className="flex flex-col gap-6 mb-8">
-                    <div className="flex items-center gap-6">
-                      <span className="text-3xl font-black text-brand-blue">
-                        Liên hệ báo giá
-                      </span>
-                      <div className="flex items-center text-brand-orange bg-brand-orange/5 px-4 py-2 rounded-full border border-brand-orange/10">
-                        <Star size={16} fill="currentColor" />
-                        <span className="text-xs font-black ml-2 tracking-widest">5.0 (24)</span>
+                  <h1 className="text-2xl md:text-5xl font-black text-brand-brown mb-4 md:mb-6 leading-tight">{selectedProduct.name}</h1>
+                  <div className="flex items-center text-brand-orange bg-brand-orange/5 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-brand-orange/10 w-fit">
+                    <Star size={14} className="md:size-4" fill="currentColor" />
+                    <span className="text-[10px] md:text-xs font-black ml-2 tracking-widest">5.0 (24 Đánh giá)</span>
+                  </div>
+                </header>
+
+                <section id="product-details" className="space-y-8 md:space-y-10">
+                  <div className="group relative">
+                    <h2 
+                      onMouseEnter={() => setShowMeaningTooltip(true)}
+                      onMouseLeave={() => setShowMeaningTooltip(false)}
+                      className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-orange mb-3 md:mb-4 flex items-center gap-3 cursor-help w-fit"
+                    >
+                      <div className="w-6 md:w-8 h-px bg-brand-orange/30"></div>
+                      Ý Nghĩa Của Hoa
+                      <AlertCircle size={10} className="md:size-3 text-brand-orange/40" />
+                    </h2>
+                    
+                    <AnimatePresence>
+                      {showMeaningTooltip && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute bottom-full left-0 mb-4 w-64 md:w-72 p-5 md:p-6 bg-brand-brown text-white rounded-[1.5rem] md:rounded-[2rem] shadow-2xl z-50 pointer-events-none border border-white/10"
+                        >
+                          <div className="relative">
+                            <div className="absolute -bottom-7 md:-bottom-8 left-6 w-3 h-3 md:w-4 md:h-4 bg-brand-brown rotate-45 border-r border-b border-white/10"></div>
+                            <span className="text-brand-orange font-black tracking-[0.2em] uppercase text-[7px] md:text-[8px] mb-2 block">Thông điệp từ hoa</span>
+                            <p className="font-medium leading-relaxed text-xs md:text-sm italic serif">
+                              {selectedProduct.meaning || "Loài hoa này mang trong mình thông điệp về sự chân thành và tình yêu thuần khiết."}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <p className="text-brand-brown font-serif italic text-lg md:text-xl leading-relaxed">
+                      {selectedProduct.meaning || "Loài hoa này mang trong mình thông điệp về sự chân thành và tình yêu thuần khiết."}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 md:gap-8">
+                    <div>
+                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-2 md:mb-3">Màu Sắc</h3>
+                      <p className="text-brand-brown font-bold text-base md:text-lg">{selectedProduct.color || "Đa dạng"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-2 md:mb-3">Kích Thước</h3>
+                      <p className="text-brand-brown font-bold text-base md:text-lg">{selectedProduct.size || "Tiêu chuẩn"}</p>
+                    </div>
+                  </div>
+
+                  {isAdmin && (
+                    <div>
+                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-2 md:mb-3">Alt Text SEO</h3>
+                      <p className="text-brand-brown/60 font-mono text-[10px] bg-brand-paper p-3 rounded-xl border border-brand-brown/5">
+                        {selectedProduct.alt_text || `${selectedProduct.name} - Hoa tươi chất lượng cao tại Thanh Ngọc`}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-3 md:mb-4">Mô Tả</h3>
+                    <div className="text-brand-brown/70 leading-relaxed text-base md:text-lg font-medium space-y-4">
+                      <p>{selectedProduct.description || "Sản phẩm được thiết kế tỉ mỉ bởi các nghệ nhân tại Thanh Ngọc, sử dụng những bông hoa tươi nhất được tuyển chọn trong ngày."}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-4">Thông tin thêm</h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-3 text-sm font-medium text-brand-brown/60">
+                        <CheckCircle2 size={16} className="text-brand-blue" />
+                        Tặng kèm thiệp chúc mừng và banner miễn phí
+                      </li>
+                      <li className="flex items-center gap-3 text-sm font-medium text-brand-brown/60">
+                        <CheckCircle2 size={16} className="text-brand-blue" />
+                        Giao hoa hỏa tốc trong vòng 60-90 phút
+                      </li>
+                      <li className="flex items-center gap-3 text-sm font-medium text-brand-brown/60">
+                        <CheckCircle2 size={16} className="text-brand-blue" />
+                        Cam kết hoa tươi như hình mẫu
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Related Products Section */}
+                  {relatedProducts.length > 0 && (
+                    <div className="pt-10 border-t border-brand-brown/5">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-orange mb-8">Sản phẩm liên quan</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        {relatedProducts.map((p) => (
+                          <div 
+                            key={p.id} 
+                            onClick={() => {
+                              setSelectedProduct(p);
+                              setActiveDetailImage(0);
+                            }}
+                            className="group cursor-pointer"
+                          >
+                            <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-3 bg-brand-paper">
+                              <img 
+                                src={optimizeImageUrl(p.image, 300)} 
+                                alt={p.name}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                loading="lazy"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                            <h5 className="text-[10px] font-bold text-brand-brown truncate group-hover:text-brand-blue transition-colors">{p.name}</h5>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {selectedProduct.meaning && (
-                        <div className="p-4 bg-brand-paper rounded-2xl border border-brand-brown/5">
-                          <span className="text-[8px] font-black uppercase tracking-widest text-brand-brown/40 block mb-1">Ý nghĩa</span>
-                          <span className="text-xs font-bold text-brand-brown">{selectedProduct.meaning}</span>
-                        </div>
-                      )}
-                      {selectedProduct.color && (
-                        <div className="p-4 bg-brand-paper rounded-2xl border border-brand-brown/5">
-                          <span className="text-[8px] font-black uppercase tracking-widest text-brand-brown/40 block mb-1">Màu sắc</span>
-                          <span className="text-xs font-bold text-brand-brown">{selectedProduct.color}</span>
-                        </div>
-                      )}
-                      {selectedProduct.size && (
-                        <div className="p-4 bg-brand-paper rounded-2xl border border-brand-brown/5">
-                          <span className="text-[8px] font-black uppercase tracking-widest text-brand-brown/40 block mb-1">Kích thước</span>
-                          <span className="text-xs font-bold text-brand-brown">{selectedProduct.size}</span>
-                        </div>
-                      )}
-                    </div>
+                  )}
+                </section>
+                
+                <footer className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-brand-brown/5">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6 md:mb-8">
+                    <button 
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                        setShowCart(true);
+                        setSelectedProduct(null);
+                      }}
+                      className="flex-1 bg-brand-orange text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-orange/20 flex items-center justify-center gap-2 md:gap-3"
+                    >
+                      <ShoppingBag size={18} className="md:size-5" />
+                      Mua ngay
+                    </button>
+                    <button 
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                      }}
+                      className="flex-1 bg-brand-blue text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-brand-orange transition-all shadow-xl shadow-brand-blue/20 flex items-center justify-center gap-2 md:gap-3"
+                    >
+                      <Plus size={18} className="md:size-5" />
+                      Thêm vào giỏ
+                    </button>
                   </div>
-                  <div className="h-px bg-brand-brown/5 w-full mb-8"></div>
-                  <p className="text-brand-brown/60 leading-relaxed mb-10 text-lg font-medium italic serif">
-                    {selectedProduct.description || "Chưa có mô tả cho sản phẩm này. Liên hệ với chúng tôi để biết thêm chi tiết về mẫu hoa này."}
+                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                    <button 
+                      onClick={() => {
+                        setCurrentView('contact');
+                        window.location.hash = '#contact';
+                        setSelectedProduct(null);
+                      }}
+                      className="flex-1 bg-brand-paper text-brand-brown py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown hover:text-white transition-all shadow-xl border border-brand-brown/5 flex items-center justify-center gap-3"
+                    >
+                      <Phone size={20} />
+                      Liên hệ tư vấn
+                    </button>
+                  </div>
+                  <p className="text-[9px] font-black text-brand-brown/20 uppercase tracking-widest text-center">
+                    &copy; {new Date().getFullYear()} - HOA TƯƠI THANH NGỌC
                   </p>
-                </div>
-                
-                <div className="mt-auto flex flex-col sm:flex-row gap-6">
-                  <button 
-                    onClick={() => {
-                      setCurrentView('contact');
-                      window.location.hash = '#contact';
-                      setSelectedProduct(null);
-                    }}
-                    className="flex-1 bg-brand-blue text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-orange transition-all shadow-xl shadow-brand-blue/20 flex items-center justify-center gap-3"
-                  >
-                    <Phone size={20} />
-                    Liên hệ ngay
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setCurrentView('contact');
-                      window.location.hash = '#contact';
-                      setSelectedProduct(null);
-                    }}
-                    className="flex-1 bg-brand-brown text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20 flex items-center justify-center gap-3"
-                  >
-                    <MessageCircle size={20} />
-                    Tư vấn Zalo
-                  </button>
-                </div>
-                
-                <div className="mt-10 flex items-center gap-8 text-brand-brown/40">
-                  <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest">
-                    <CheckCircle2 size={16} className="text-brand-blue" />
-                    Hoa tươi 100%
-                  </div>
-                </div>
+                </footer>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
-        {selectedBlog && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedBlog(null)}
-              className="absolute inset-0 bg-brand-brown/60 backdrop-blur-sm"
-            ></motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-brand-bg rounded-[3rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh] border border-brand-brown/10"
-            >
-              <button 
-                onClick={() => setSelectedBlog(null)}
-                className="absolute top-6 right-6 z-10 p-3 bg-white/80 backdrop-blur-sm rounded-2xl hover:bg-white transition-all shadow-lg text-brand-brown/40 hover:text-brand-orange"
-              >
-                <X size={24} />
-              </button>
-              
-              <div className="h-80 md:h-[500px] relative shrink-0">
-                <img 
-                  src={optimizeImageUrl(selectedBlog.image || `https://picsum.photos/seed/${selectedBlog.id}/1200/800`, 1200)} 
-                  alt={selectedBlog.title}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-brown/90 via-brand-brown/20 to-transparent flex items-end p-10 md:p-16">
-                  <div className="max-w-3xl">
-                    <span className="bg-brand-blue text-white text-[10px] font-black px-5 py-2 rounded-full uppercase tracking-widest mb-6 inline-block shadow-xl">
-                      {new Date(selectedBlog.created_at).toLocaleDateString('vi-VN')}
-                    </span>
-                    <h3 className="text-4xl md:text-6xl font-black text-white leading-tight">{selectedBlog.title}</h3>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-10 md:p-16 overflow-y-auto">
-                <div className="flex items-center gap-8 mb-12 text-brand-brown/40 text-[10px] font-black uppercase tracking-[0.2em]">
-                  <span className="flex items-center gap-2"><Store size={16} className="text-brand-blue" /> Tác giả: {selectedBlog.author}</span>
-                  <span className="flex items-center gap-2"><Clock size={16} className="text-brand-blue" /> 5 phút đọc</span>
-                </div>
-                <div className="prose prose-stone max-w-none text-brand-brown/70 leading-relaxed text-lg font-medium italic serif">
-                  {selectedBlog.content.split('\n').map((para, i) => (
-                    <p key={i} className="mb-6">{para}</p>
-                  ))}
-                </div>
-                <div className="mt-16 pt-10 border-t border-brand-brown/5 flex justify-between items-center">
-                  <div className="flex gap-6">
-                    <button className="text-brand-blue hover:text-brand-orange font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all">
-                      <Facebook size={20} /> Chia sẻ
-                    </button>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedBlog(null)}
-                    className="bg-brand-brown text-white px-12 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
 
       {/* Bulk Upload Modal */}
       <AnimatePresence>
@@ -2200,6 +2907,740 @@ export default function App() {
                   {uploading ? 'Đang tải lên...' : 'Bắt đầu tải lên'}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Blog Modal */}
+      <AnimatePresence>
+        {showBlogModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setShowBlogModal(false); setEditingBlog(null); }}
+              className="absolute inset-0 bg-brand-brown/60 backdrop-blur-sm"
+            ></motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-brand-bg rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-brand-brown/10 flex flex-col"
+            >
+              <div className="p-8 border-b border-brand-brown/5 flex justify-between items-center bg-brand-paper">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-brand-blue rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand-blue/20">
+                    {editingBlog ? <Settings size={24} /> : <Plus size={24} />}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-brand-brown uppercase tracking-widest">{editingBlog ? 'Sửa Bài Viết' : 'Thêm Bài Viết Mới'}</h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-brown/40 mt-1">Chia sẻ kiến thức & cảm hứng về hoa</p>
+                  </div>
+                </div>
+                <button onClick={() => { setShowBlogModal(false); setEditingBlog(null); }} className="p-3 hover:bg-white rounded-2xl transition-all text-brand-brown/40 hover:text-brand-orange">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Tiêu đề bài viết</label>
+                      <input 
+                        type="text" 
+                        value={newBlog.title}
+                        onChange={(e) => {
+                          const title = e.target.value;
+                          const slug = title.toLowerCase()
+                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                            .replace(/[đĐ]/g, 'd')
+                            .replace(/([^0-9a-z-\s])/g, '')
+                            .replace(/(\s+)/g, '-')
+                            .replace(/-+/g, '-')
+                            .replace(/^-+|-+$/g, '');
+                          setNewBlog({ ...newBlog, title, slug });
+                        }}
+                        placeholder="VD: Cách giữ hoa tươi lâu..." 
+                        className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Đường dẫn (Slug)</label>
+                      <input 
+                        type="text" 
+                        value={newBlog.slug}
+                        onChange={(e) => setNewBlog({ ...newBlog, slug: e.target.value })}
+                        placeholder="VD: cach-giu-hoa-tuoi-lau" 
+                        className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Tác giả</label>
+                      <input 
+                        type="text" 
+                        value={newBlog.author}
+                        onChange={(e) => setNewBlog({ ...newBlog, author: e.target.value })}
+                        placeholder="VD: Admin" 
+                        className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4 block">Hình ảnh đại diện</label>
+                    <div className="relative aspect-video rounded-3xl bg-white border border-brand-brown/5 overflow-hidden group">
+                      {newBlog.image ? (
+                        <>
+                          <img src={optimizeImageUrl(newBlog.image, 800)} alt="Preview" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-brand-brown/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button 
+                              onClick={() => setNewBlog({ ...newBlog, image: '' })}
+                              className="p-4 bg-red-500 text-white rounded-2xl shadow-xl hover:bg-red-600 transition-all"
+                            >
+                              <Trash2 size={24} />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                          <div className="w-16 h-16 bg-brand-bg rounded-2xl flex items-center justify-center text-brand-brown/20">
+                            <Upload size={32} />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40">Kéo thả hoặc click để tải ảnh</p>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  const url = await uploadFile(file);
+                                  setNewBlog({ ...newBlog, image: url });
+                                } catch (error) {
+                                  alert('Lỗi tải ảnh: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+                                }
+                              }
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Tóm tắt ngắn</label>
+                  <textarea 
+                    value={newBlog.excerpt}
+                    onChange={(e) => setNewBlog({ ...newBlog, excerpt: e.target.value })}
+                    rows={2}
+                    placeholder="Mô tả ngắn gọn nội dung bài viết..." 
+                    className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Nội dung bài viết</label>
+                  <textarea 
+                    value={newBlog.content}
+                    onChange={(e) => setNewBlog({ ...newBlog, content: e.target.value })}
+                    rows={10}
+                    placeholder="Viết nội dung bài viết tại đây..." 
+                    className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium resize-none"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div className="p-8 bg-brand-paper flex justify-end gap-6 border-t border-brand-brown/5">
+                <button 
+                  onClick={() => { setShowBlogModal(false); setEditingBlog(null); }}
+                  className="px-8 py-4 text-brand-brown/40 hover:text-brand-brown font-black uppercase tracking-widest text-[10px] transition-all"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={handleSaveBlog}
+                  className="px-12 py-4 bg-brand-brown text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
+                >
+                  {editingBlog ? 'Lưu Thay Đổi' : 'Đăng Bài Viết'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettingsModal(false)}
+              className="absolute inset-0 bg-brand-brown/60 backdrop-blur-sm"
+            ></motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-brand-bg rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-brand-brown/10 flex flex-col"
+            >
+              <div className="p-8 border-b border-brand-brown/5 flex justify-between items-center bg-brand-paper">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-brand-blue rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand-blue/20">
+                    <Settings size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-brand-brown uppercase tracking-widest">Cài Đặt Trang Web</h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-brown/40 mt-1">Quản lý hình ảnh giao diện & logo</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowSettingsModal(false)} className="p-3 hover:bg-white rounded-2xl transition-all text-brand-brown/40 hover:text-brand-orange">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-12">
+                {/* Logo & Hero Section */}
+                <section>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-blue mb-8 flex items-center gap-2">
+                    <Store size={18} /> Giao Diện Chính
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Logo Upload */}
+                    <div className="space-y-4">
+                      <label className="text-xs font-black text-brand-brown uppercase tracking-widest block">Logo Website</label>
+                      <div className="flex items-center gap-6 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-sm">
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-brand-bg border border-brand-brown/10 flex-shrink-0 flex items-center justify-center p-2">
+                          <img 
+                            src={optimizeImageUrl(settings.logo_url || LOGO_URL, 100)} 
+                            alt="Logo Preview" 
+                            className="max-w-full max-h-full object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <p className="text-[10px] text-brand-brown/40 font-bold uppercase tracking-wider leading-relaxed">Kích thước khuyên dùng: 200x200px (PNG trong suốt)</p>
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  try {
+                                    const url = await uploadFile(file);
+                                    handleSaveSettings({ logo_url: url });
+                                  } catch (error) {
+                                    console.error('Logo upload error:', error);
+                                    alert('Lỗi tải logo: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+                                  }
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            />
+                            <button className="w-full py-3 bg-brand-paper text-brand-brown rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown hover:text-white transition-all flex items-center justify-center gap-2">
+                              <Upload size={14} /> Thay đổi Logo
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hero Image Upload */}
+                    <div className="space-y-4">
+                      <label className="text-xs font-black text-brand-brown uppercase tracking-widest block">Ảnh Hero (Trang chủ)</label>
+                      <div className="flex items-center gap-6 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-sm">
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-brand-bg border border-brand-brown/10 flex-shrink-0">
+                          <img 
+                            src={optimizeImageUrl(settings.hero_image_url || PLACEHOLDER_IMAGE, 200)} 
+                            alt="Hero Preview" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <p className="text-[10px] text-brand-brown/40 font-bold uppercase tracking-wider leading-relaxed">Kích thước khuyên dùng: 1920x1080px</p>
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  try {
+                                    const url = await uploadFile(file);
+                                    handleSaveSettings({ hero_image_url: url });
+                                  } catch (error) {
+                                    console.error('Hero upload error:', error);
+                                  }
+                                }
+                              }}
+                              className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            />
+                            <button className="w-full py-3 bg-brand-paper text-brand-brown rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown hover:text-white transition-all flex items-center justify-center gap-2">
+                              <Upload size={14} /> Thay đổi Ảnh Hero
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Category Images Section */}
+                <section>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-blue mb-8 flex items-center gap-2">
+                    <ShoppingBasket size={18} /> Ảnh Danh Mục Sản Phẩm
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {CATEGORIES.map(cat => (
+                      <div key={cat.id} className="p-6 bg-white rounded-[2rem] border border-brand-brown/5 shadow-sm space-y-4 group">
+                        <div className="flex justify-between items-center">
+                          <h5 className="text-[10px] font-black uppercase tracking-widest text-brand-brown">{cat.name}</h5>
+                        </div>
+                        <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-brand-bg border border-brand-brown/10 relative">
+                          <img 
+                            src={optimizeImageUrl(settings[`category_image_${cat.id}`] || cat.image || PLACEHOLDER_IMAGE, 400)} 
+                            alt={cat.name} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-brand-brown/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-6">
+                            <div className="relative w-full">
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    try {
+                                      const url = await uploadFile(file);
+                                      handleSaveSettings({ [`category_image_${cat.id}`]: url });
+                                    } catch (error) {
+                                      console.error('Category image upload error:', error);
+                                      alert('Lỗi tải ảnh danh mục: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+                                    }
+                                  }
+                                }}
+                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                              />
+                              <button className="w-full py-3 bg-white text-brand-brown rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2">
+                                <Upload size={14} /> Thay đổi ảnh
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <div className="p-8 border-t border-brand-brown/5 bg-brand-paper flex justify-end">
+                <button 
+                  onClick={() => setShowSettingsModal(false)}
+                  className="px-12 py-4 bg-brand-brown text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
+                >
+                  Đóng
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Checkout Modal */}
+      <AnimatePresence>
+        {showCart && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (checkoutStep !== 4) setShowCart(false);
+                else {
+                  setShowCart(false);
+                  setCheckoutStep(1);
+                }
+              }}
+              className="absolute inset-0 bg-brand-brown/60 backdrop-blur-sm"
+            ></motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-brand-bg rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col border border-brand-brown/10 max-h-[90vh]"
+            >
+              <div className="p-8 border-b border-brand-brown/5 flex justify-between items-center bg-brand-paper">
+                <div>
+                  <h2 className="text-2xl font-serif font-black text-brand-brown">Giỏ Hàng & Thanh Toán</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 mt-1">Hoàn tất đơn hàng của bạn</p>
+                </div>
+                {checkoutStep !== 4 && (
+                  <button 
+                    onClick={() => setShowCart(false)}
+                    className="p-3 bg-white rounded-2xl hover:bg-brand-orange hover:text-white transition-all shadow-lg text-brand-brown/40"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+              </div>
+
+              {/* Progress Indicator */}
+              {checkoutStep < 4 && (
+                <div className="bg-white px-8 py-6 border-b border-brand-brown/5">
+                  <div className="flex items-center justify-between max-w-2xl mx-auto relative">
+                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-brand-brown/5 -translate-y-1/2 z-0"></div>
+                    <div 
+                      className="absolute top-1/2 left-0 h-0.5 bg-brand-blue -translate-y-1/2 z-0 transition-all duration-500"
+                      style={{ width: `${((checkoutStep - 1) / 2) * 100}%` }}
+                    ></div>
+                    
+                    {[
+                      { step: 1, icon: ShoppingBag, label: 'Giỏ hàng' },
+                      { step: 2, icon: Truck, label: 'Giao hàng' },
+                      { step: 3, icon: CreditCard, label: 'Xác nhận' }
+                    ].map((item) => (
+                      <div key={item.step} className="relative z-10 flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${checkoutStep >= item.step ? 'bg-brand-blue text-white shadow-lg scale-110' : 'bg-brand-paper text-brand-brown/20 border border-brand-brown/5'}`}>
+                          <item.icon size={18} />
+                        </div>
+                        <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${checkoutStep >= item.step ? 'text-brand-blue' : 'text-brand-brown/20'}`}>
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto p-8">
+                {checkoutStep === 1 && (
+                  <div className="space-y-8">
+                    {cart.length === 0 ? (
+                      <div className="py-20 text-center">
+                        <div className="w-20 h-20 bg-brand-paper rounded-full flex items-center justify-center mx-auto mb-6 text-brand-brown/20">
+                          <ShoppingBag size={40} />
+                        </div>
+                        <h3 className="text-xl font-serif font-black text-brand-brown mb-2">Giỏ hàng trống</h3>
+                        <p className="text-brand-brown/40 text-xs font-bold uppercase tracking-widest mb-8">Hãy chọn cho mình những bó hoa thật đẹp nhé!</p>
+                        <button 
+                          onClick={() => setShowCart(false)}
+                          className="px-10 py-4 bg-brand-brown text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl"
+                        >
+                          Tiếp tục mua sắm
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {cart.map((item) => (
+                          <div key={item.product.id} className="flex items-center gap-6 p-4 bg-white rounded-3xl border border-brand-brown/5 shadow-sm group hover:shadow-md transition-all">
+                            <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-brand-brown/5">
+                              <img 
+                                src={optimizeImageUrl(item.product.image, 200)} 
+                                alt={item.product.name} 
+                                className="w-full h-full object-cover" 
+                                loading="lazy"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-black text-brand-brown truncate">{item.product.name}</h4>
+                              <p className="text-[10px] text-brand-brown/40 font-bold uppercase tracking-widest mt-1">
+                                {CATEGORIES.find(c => c.id === item.product.category)?.name}
+                              </p>
+                              <div className="flex items-center gap-4 mt-4">
+                                <div className="flex items-center bg-brand-paper rounded-xl p-1 border border-brand-brown/5">
+                                  <button 
+                                    onClick={() => updateCartQuantity(item.product.id, -1)}
+                                    className="w-8 h-8 flex items-center justify-center text-brand-brown hover:bg-white rounded-lg transition-all"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-10 text-center font-black text-xs">{item.quantity}</span>
+                                  <button 
+                                    onClick={() => updateCartQuantity(item.product.id, 1)}
+                                    className="w-8 h-8 flex items-center justify-center text-brand-brown hover:bg-white rounded-lg transition-all"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                                <button 
+                                  onClick={() => removeFromCart(item.product.id)}
+                                  className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline"
+                                >
+                                  Xóa
+                                </button>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs font-black text-brand-brown/30 uppercase tracking-widest mb-1">Giá</p>
+                              <p className="font-serif font-black text-brand-blue text-lg">{formatPrice(item.product.price)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {checkoutStep === 2 && (
+                  <div className="max-w-2xl mx-auto space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Họ và tên *</label>
+                        <input 
+                          type="text" 
+                          value={orderForm.customerName}
+                          onChange={(e) => {
+                            setOrderForm({ ...orderForm, customerName: e.target.value });
+                            if (validationErrors.customerName) setValidationErrors(prev => ({ ...prev, customerName: '' }));
+                          }}
+                          placeholder="Nguyễn Văn A"
+                          className={`w-full px-6 py-4 rounded-2xl bg-white border ${validationErrors.customerName ? 'border-red-500 ring-4 ring-red-500/5' : 'border-brand-brown/10'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-bold text-brand-brown`}
+                        />
+                        {validationErrors.customerName && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest ml-4">{validationErrors.customerName}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Số điện thoại *</label>
+                        <input 
+                          type="tel" 
+                          value={orderForm.customerPhone}
+                          onChange={(e) => {
+                            setOrderForm({ ...orderForm, customerPhone: e.target.value });
+                            if (validationErrors.customerPhone) setValidationErrors(prev => ({ ...prev, customerPhone: '' }));
+                          }}
+                          placeholder="090 123 4567"
+                          className={`w-full px-6 py-4 rounded-2xl bg-white border ${validationErrors.customerPhone ? 'border-red-500 ring-4 ring-red-500/5' : 'border-brand-brown/10'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-bold text-brand-brown`}
+                        />
+                        {validationErrors.customerPhone && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest ml-4">{validationErrors.customerPhone}</p>}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Địa chỉ giao hàng *</label>
+                      <textarea 
+                        rows={3}
+                        value={orderForm.shippingAddress}
+                        onChange={(e) => {
+                          setOrderForm({ ...orderForm, shippingAddress: e.target.value });
+                          if (validationErrors.shippingAddress) setValidationErrors(prev => ({ ...prev, shippingAddress: '' }));
+                        }}
+                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
+                        className={`w-full px-6 py-4 rounded-2xl bg-white border ${validationErrors.shippingAddress ? 'border-red-500 ring-4 ring-red-500/5' : 'border-brand-brown/10'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-bold text-brand-brown resize-none`}
+                      ></textarea>
+                      {validationErrors.shippingAddress && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest ml-4">{validationErrors.shippingAddress}</p>}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Ngày giao hoa *</label>
+                        <input 
+                          type="date" 
+                          value={orderForm.deliveryDate}
+                          onChange={(e) => {
+                            setOrderForm({ ...orderForm, deliveryDate: e.target.value });
+                            if (validationErrors.deliveryDate) setValidationErrors(prev => ({ ...prev, deliveryDate: '' }));
+                          }}
+                          className={`w-full px-6 py-4 rounded-2xl bg-white border ${validationErrors.deliveryDate ? 'border-red-500 ring-4 ring-red-500/5' : 'border-brand-brown/10'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-bold text-brand-brown`}
+                        />
+                        {validationErrors.deliveryDate && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest ml-4">{validationErrors.deliveryDate}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Email (không bắt buộc)</label>
+                        <input 
+                          type="email" 
+                          value={orderForm.customerEmail}
+                          onChange={(e) => setOrderForm({ ...orderForm, customerEmail: e.target.value })}
+                          placeholder="email@example.com"
+                          className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/10 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-bold text-brand-brown"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {checkoutStep === 3 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-brand-brown/40 mb-6 flex items-center gap-3">
+                          <div className="w-8 h-px bg-brand-brown/10"></div>
+                          Phương thức thanh toán
+                        </h3>
+                        <div className="space-y-4">
+                          <button 
+                            onClick={() => setOrderForm({ ...orderForm, paymentMethod: 'cod' })}
+                            className={`w-full p-6 rounded-3xl border-2 transition-all flex items-center gap-4 ${orderForm.paymentMethod === 'cod' ? 'border-brand-blue bg-brand-blue/5' : 'border-brand-brown/5 bg-white hover:border-brand-blue/30'}`}
+                          >
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${orderForm.paymentMethod === 'cod' ? 'border-brand-blue bg-brand-blue' : 'border-brand-brown/20'}`}>
+                              {orderForm.paymentMethod === 'cod' && <Check size={14} className="text-white" />}
+                            </div>
+                            <div className="text-left">
+                              <p className="font-black text-brand-brown uppercase tracking-widest text-[10px]">Thanh toán khi nhận hoa (COD)</p>
+                              <p className="text-[10px] text-brand-brown/40 font-bold mt-1">Trả tiền mặt khi shipper giao hoa tới</p>
+                            </div>
+                          </button>
+                          <button 
+                            onClick={() => setOrderForm({ ...orderForm, paymentMethod: 'bank_transfer' })}
+                            className={`w-full p-6 rounded-3xl border-2 transition-all flex items-center gap-4 ${orderForm.paymentMethod === 'bank_transfer' ? 'border-brand-blue bg-brand-blue/5' : 'border-brand-brown/5 bg-white hover:border-brand-blue/30'}`}
+                          >
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${orderForm.paymentMethod === 'bank_transfer' ? 'border-brand-blue bg-brand-blue' : 'border-brand-brown/20'}`}>
+                              {orderForm.paymentMethod === 'bank_transfer' && <Check size={14} className="text-white" />}
+                            </div>
+                            <div className="text-left">
+                              <p className="font-black text-brand-brown uppercase tracking-widest text-[10px]">Chuyển khoản ngân hàng</p>
+                              <p className="text-[10px] text-brand-brown/40 font-bold mt-1">Nhận thông tin STK sau khi đặt hàng</p>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-brand-paper rounded-[2rem] p-8 border border-brand-brown/5">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-brand-brown/40 mb-6">Thông tin nhận hàng</h3>
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <span className="text-[10px] font-black text-brand-brown/30 uppercase tracking-widest">Người nhận:</span>
+                            <span className="text-sm font-bold text-brand-brown">{orderForm.customerName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[10px] font-black text-brand-brown/30 uppercase tracking-widest">Điện thoại:</span>
+                            <span className="text-sm font-bold text-brand-brown">{orderForm.customerPhone}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[10px] font-black text-brand-brown/30 uppercase tracking-widest">Ngày giao:</span>
+                            <span className="text-sm font-bold text-brand-brown">{orderForm.deliveryDate}</span>
+                          </div>
+                          <div className="pt-4 border-t border-brand-brown/5">
+                            <span className="text-[10px] font-black text-brand-brown/30 uppercase tracking-widest block mb-2">Địa chỉ:</span>
+                            <p className="text-sm font-medium text-brand-brown leading-relaxed">{orderForm.shippingAddress}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-8">
+                      <div className="bg-white rounded-[2rem] p-8 border border-brand-brown/5 shadow-xl">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-brand-brown/40 mb-6">Tóm tắt đơn hàng</h3>
+                        <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                          {cart.map((item) => (
+                            <div key={item.product.id} className="flex justify-between items-center gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden border border-brand-brown/5">
+                                  <img 
+                                    src={optimizeImageUrl(item.product.image, 100)} 
+                                    alt={item.product.name} 
+                                    className="w-full h-full object-cover" 
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-black text-brand-brown truncate max-w-[150px]">{item.product.name}</p>
+                                  <p className="text-[10px] text-brand-brown/40 font-bold">x{item.quantity}</p>
+                                </div>
+                              </div>
+                              <p className="text-xs font-serif font-black text-brand-blue">{formatPrice(item.product.price)}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-8 pt-8 border-t-2 border-dashed border-brand-brown/10 space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-black text-brand-brown/30 uppercase tracking-widest">Tổng cộng:</span>
+                            <span className="text-2xl font-serif font-black text-brand-blue">{formatPrice(calculateTotal())}</span>
+                          </div>
+                          <p className="text-[10px] text-brand-brown/40 font-bold italic text-center">Nhân viên sẽ gọi điện xác nhận và báo giá chính xác cho bạn</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {checkoutStep === 4 && (
+                  <div className="py-20 text-center max-w-lg mx-auto">
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+                      className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/20"
+                    >
+                      <Check size={48} />
+                    </motion.div>
+                    <h3 className="text-3xl font-serif font-black text-brand-brown mb-4">Đặt hàng thành công!</h3>
+                    <p className="text-brand-brown/60 font-medium mb-12 leading-relaxed">
+                      Cảm ơn bạn đã tin tưởng Thanh Ngọc. Chúng tôi đã nhận được đơn hàng và sẽ liên hệ với bạn qua số điện thoại <span className="text-brand-blue font-black">{orderForm.customerPhone}</span> trong vòng 15-30 phút để xác nhận.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <button 
+                        onClick={() => {
+                          setShowCart(false);
+                          setCheckoutStep(1);
+                        }}
+                        className="px-10 py-5 bg-brand-brown text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl"
+                      >
+                        Tiếp tục mua sắm
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowCart(false);
+                          setCheckoutStep(1);
+                          setCurrentView('contact');
+                          window.location.hash = '#contact';
+                        }}
+                        className="px-10 py-5 bg-brand-paper text-brand-brown border border-brand-brown/10 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown hover:text-white transition-all shadow-lg"
+                      >
+                        Hỗ trợ qua Zalo
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {checkoutStep < 4 && (
+                <div className="p-8 bg-brand-paper border-t border-brand-brown/5 flex justify-between items-center">
+                  <button 
+                    onClick={() => {
+                      if (checkoutStep === 1) setShowCart(false);
+                      else setCheckoutStep(prev => prev - 1);
+                    }}
+                    className="px-8 py-4 text-brand-brown/40 hover:text-brand-brown font-black uppercase tracking-widest text-[10px] transition-all flex items-center gap-2"
+                  >
+                    <ChevronLeft size={16} />
+                    {checkoutStep === 1 ? 'Tiếp tục mua sắm' : 'Quay lại'}
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      if (checkoutStep === 1) {
+                        if (cart.length > 0) setCheckoutStep(2);
+                      } else if (checkoutStep === 2) {
+                        if (validateCheckoutStep(2)) {
+                          setCheckoutStep(3);
+                        }
+                      } else if (checkoutStep === 3) {
+                        submitOrder();
+                      }
+                    }}
+                    disabled={checkoutStep === 1 && cart.length === 0 || uploading}
+                    className="px-12 py-5 bg-brand-brown text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20 flex items-center gap-3 disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        {checkoutStep === 1 ? 'Tiến hành đặt hàng' : checkoutStep === 2 ? 'Tiếp theo' : 'Xác nhận đặt hàng'}
+                        <ChevronRight size={16} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

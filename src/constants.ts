@@ -14,7 +14,7 @@ export const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-152369457672
 
 export const CONTACT_INFO = {
   address: '8 Phan Văn Hân, Phường 19, Bình Thạnh, TP. Hồ Chí Minh',
-  phone: '0777 110 959',
+  phone: '0934 926 092',
   hours: '07:00 - 21:00',
   maps_embed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.2428581355575!2d106.7049357758688!3d10.792702458891574!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317529002e9f54cf%3A0xb0684463b666e644!2zSG9hIFTGsMahaSBUaGFuaCBOZ-G7jWMg4oCTIFBoYW4gVsSDbiBIw6Ju!5e0!3m2!1svi!2s!4v1773026913887!5m2!1svi!2s'
 };

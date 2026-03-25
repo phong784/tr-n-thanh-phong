@@ -577,49 +577,58 @@ async function startServer() {
     }
   });
 
-  app.post('/api/upload', (req, res, next) => {
+  // Image upload endpoint with trailing slash support and improved error handling
+  app.post(['/api/upload', '/api/upload/'], (req, res) => {
     console.log('Upload request received at /api/upload');
-    upload.single('image')(req, res, (err) => {
+    upload.single('image')(req, res, async (err) => {
       if (err) {
-        console.error('Multer error:', err);
-        return res.status(400).json({ error: `Upload error: ${err.message}` });
+        console.error('Multer upload error:', err);
+        return res.status(400).json({ 
+          error: `Upload error: ${err.message}`,
+          code: 'MULTER_ERROR'
+        });
       }
-      next();
+
+      if (!req.file) {
+        console.error('No file found in request');
+        return res.status(400).json({ 
+          error: 'No file uploaded',
+          code: 'NO_FILE'
+        });
+      }
+
+      try {
+        const filePath = req.file.path;
+        const fileName = path.parse(req.file.filename).name;
+        const webpFileName = `optimized-${Date.now()}-${fileName}.webp`;
+        const webpFilePath = path.join(uploadDir, webpFileName);
+
+        console.log('Optimizing image with sharp:', filePath);
+        // Process image with sharp: max width 1200px for hero images, convert to WebP
+        await sharp(filePath)
+          .resize({ width: 1200, withoutEnlargement: true })
+          .webp({ quality: 80, effort: 6 }) 
+          .toFile(webpFilePath);
+
+        // Delete original file
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log('Original file deleted:', filePath);
+          } catch (unlinkErr) {
+            console.warn('Failed to delete original file:', unlinkErr);
+          }
+        }
+
+        console.log('Image optimized successfully:', webpFileName);
+        return res.json({ url: `/uploads/${webpFileName}` });
+      } catch (error: any) {
+        console.error('Image optimization error (falling back to original):', error);
+        // Fallback: return the original uploaded file if optimization fails
+        console.log('Falling back to original file:', req.file.filename);
+        return res.json({ url: `/uploads/${req.file.filename}` });
+      }
     });
-  }, async (req, res) => {
-    console.log('Processing uploaded image:', req.file?.filename);
-    if (!req.file) {
-      console.error('No file found in request');
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    try {
-      const filePath = req.file.path;
-      const fileName = path.parse(req.file.filename).name;
-      const webpFileName = fileName + '.webp';
-      const webpFilePath = path.join(uploadDir, webpFileName);
-
-      console.log('Optimizing image with sharp:', filePath);
-      // Process image with sharp: max width 1200px for hero images, convert to WebP
-      await sharp(filePath)
-        .resize({ width: 1200, withoutEnlargement: true })
-        .webp({ quality: 80, effort: 6 }) 
-        .toFile(webpFilePath);
-
-      // Delete original file
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log('Original file deleted:', filePath);
-      }
-
-      console.log('Image optimized successfully:', webpFileName);
-      res.json({ url: `/uploads/${webpFileName}` });
-    } catch (error: any) {
-      console.error('Image optimization error:', error);
-      // Fallback: return the original uploaded file if optimization fails
-      console.log('Falling back to original file:', req.file.filename);
-      res.json({ url: `/uploads/${req.file.filename}` });
-    }
   });
 
   // Settings endpoints

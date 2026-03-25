@@ -165,111 +165,216 @@ const AboutPage = ({ onBack }: { onBack: () => void }) => (
   </motion.div>
 );
 
-const ContactPage = ({ onBack }: { onBack: () => void }) => (
-  <motion.div 
-    initial={{ opacity: 0, x: 20 }}
-    animate={{ opacity: 1, x: 0 }}
-    exit={{ opacity: 0, x: -20 }}
-    className="pt-32 pb-24 bg-brand-bg"
-  >
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="flex items-center gap-4 mb-16">
-        <button 
-          onClick={onBack}
-          className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
-        >
-          <ChevronLeft size={24} />
-        </button>
-        <h2 className="text-4xl md:text-6xl font-serif font-black text-brand-brown leading-tight">Liên Hệ</h2>
-      </div>
+const ContactPage = ({ onBack }: { onBack: () => void }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    message: ''
+  });
+  const [errors, setErrors] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-        <div className="space-y-12">
-          <div>
-            <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Thông tin liên lạc</span>
-            <h3 className="text-3xl font-serif font-black text-brand-brown mb-8">Ghé Thăm Cửa Hàng <br /><span className="text-brand-blue italic font-normal">Thanh Ngọc</span></h3>
-            
-            <div className="space-y-6">
-              <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
-                <div className="w-12 h-12 bg-brand-blue/10 rounded-2xl flex items-center justify-center text-brand-blue shrink-0">
-                  <MapPin size={24} />
-                </div>
-                <div>
-                  <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Địa chỉ</h4>
-                  <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.address}</p>
-                </div>
-              </div>
+  const validate = () => {
+    let isValid = true;
+    const newErrors = { name: '', phone: '', email: '', message: '' };
 
-              <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
-                <div className="w-12 h-12 bg-brand-orange/10 rounded-2xl flex items-center justify-center text-brand-orange shrink-0">
-                  <Phone size={24} />
-                </div>
-                <div>
-                  <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Điện thoại</h4>
-                  <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.phone}</p>
-                </div>
-              </div>
+    if (!formData.name.trim()) {
+      newErrors.name = 'Vui lòng nhập họ và tên';
+      isValid = false;
+    }
 
-              <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
-                <div className="w-12 h-12 bg-brand-brown/10 rounded-2xl flex items-center justify-center text-brand-brown shrink-0">
-                  <Clock size={24} />
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Vui lòng nhập số điện thoại';
+      isValid = false;
+    } else if (!/^\d{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
+      newErrors.phone = 'Số điện thoại không hợp lệ (10-11 chữ số)';
+      isValid = false;
+    }
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email không hợp lệ';
+      isValid = false;
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = 'Vui lòng nhập lời nhắn';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validate()) {
+      setIsSubmitting(true);
+      // Simulate API call
+      setTimeout(() => {
+        alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất.');
+        setFormData({ name: '', phone: '', email: '', message: '' });
+        setIsSubmitting(false);
+      }, 1000);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="pt-32 pb-24 bg-brand-bg"
+    >
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center gap-4 mb-16">
+          <button 
+            onClick={onBack}
+            className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <h2 className="text-4xl md:text-6xl font-serif font-black text-brand-brown leading-tight">Liên Hệ</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          <div className="space-y-12">
+            <div>
+              <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Thông tin liên lạc</span>
+              <h3 className="text-3xl font-serif font-black text-brand-brown mb-8">Ghé Thăm Cửa Hàng <br /><span className="text-brand-blue italic font-normal">Thanh Ngọc</span></h3>
+              
+              <div className="space-y-6">
+                <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
+                  <div className="w-12 h-12 bg-brand-blue/10 rounded-2xl flex items-center justify-center text-brand-blue shrink-0">
+                    <MapPin size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Địa chỉ</h4>
+                    <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.address}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Giờ mở cửa</h4>
-                  <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.hours}</p>
+
+                <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
+                  <div className="w-12 h-12 bg-brand-orange/10 rounded-2xl flex items-center justify-center text-brand-orange shrink-0">
+                    <Phone size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Điện thoại</h4>
+                    <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.phone}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
+                  <div className="w-12 h-12 bg-brand-brown/10 rounded-2xl flex items-center justify-center text-brand-brown shrink-0">
+                    <Clock size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Giờ mở cửa</h4>
+                    <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.hours}</p>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div className="rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl h-80">
+              <iframe 
+                src={CONTACT_INFO.maps_embed} 
+                width="100%" 
+                height="100%" 
+                style={{ border: 0 }} 
+                allowFullScreen 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
           </div>
 
-          <div className="rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl h-80">
-            <iframe 
-              src={CONTACT_INFO.maps_embed} 
-              width="100%" 
-              height="100%" 
-              style={{ border: 0 }} 
-              allowFullScreen 
-              loading="lazy" 
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
-          </div>
-        </div>
-
-        <div className="bg-brand-paper p-10 md:p-16 rounded-[4rem] border border-brand-brown/5 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-          <div className="relative z-10">
-            <h3 className="text-3xl font-serif font-black text-brand-brown mb-4">Gửi Lời Nhắn</h3>
-            <p className="text-brand-brown/60 font-medium mb-10">Chúng tôi luôn sẵn sàng lắng nghe và tư vấn cho bạn những mẫu hoa tuyệt vời nhất.</p>
-            
-            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất.'); }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Họ và tên</label>
-                  <input type="text" placeholder="Nguyễn Văn A" className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" required />
+          <div className="bg-brand-paper p-10 md:p-16 rounded-[4rem] border border-brand-brown/5 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="relative z-10">
+              <h3 className="text-3xl font-serif font-black text-brand-brown mb-4">Gửi Lời Nhắn</h3>
+              <p className="text-brand-brown/60 font-medium mb-10">Chúng tôi luôn sẵn sàng lắng nghe và tư vấn cho bạn những mẫu hoa tuyệt vời nhất.</p>
+              
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Họ và tên</label>
+                    <input 
+                      type="text" 
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Nguyễn Văn A" 
+                      className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.name ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium`} 
+                    />
+                    {errors.name && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.name}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Số điện thoại</label>
+                    <input 
+                      type="tel" 
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="0934 926 092" 
+                      className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.phone ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium`} 
+                    />
+                    {errors.phone && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.phone}</p>}
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Số điện thoại</label>
-                  <input type="tel" placeholder="090 123 4567" className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" required />
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Email (không bắt buộc)</label>
+                  <input 
+                    type="email" 
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="email@example.com" 
+                    className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.email ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium`} 
+                  />
+                  {errors.email && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.email}</p>}
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Email (không bắt buộc)</label>
-                <input type="email" placeholder="email@example.com" className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Lời nhắn</label>
-                <textarea rows={4} placeholder="Tôi muốn tư vấn về hoa sinh nhật..." className="w-full px-6 py-4 rounded-2xl bg-white border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium resize-none" required></textarea>
-              </div>
-              <button type="submit" className="w-full py-5 bg-brand-brown text-brand-bg rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20 flex items-center justify-center gap-3">
-                Gửi Yêu Cầu <MessageCircle size={18} />
-              </button>
-            </form>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Lời nhắn</label>
+                  <textarea 
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    rows={4} 
+                    placeholder="Tôi muốn tư vấn về hoa sinh nhật..." 
+                    className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.message ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium resize-none`} 
+                  ></textarea>
+                  {errors.message && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.message}</p>}
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full py-5 bg-brand-brown text-brand-bg rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Đang gửi...' : 'Gửi Yêu Cầu'} <MessageCircle size={18} />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 const OffersPage = ({ onBack, onShopNow }: { onBack: () => void, onShopNow: () => void }) => {
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -439,6 +544,69 @@ const BlogDetailPage = ({ slug, onBack }: { slug: string, onBack: () => void }) 
     window.scrollTo(0, 0);
   }, [slug]);
 
+  useEffect(() => {
+    if (blog) {
+      const originalTitle = document.title;
+      
+      // Update Title
+      document.title = `${blog.title} | Hoa Tươi Thanh Ngọc`;
+
+      // Update Meta Description
+      let metaDescription = document.querySelector('meta[name="description"]');
+      const originalDescription = metaDescription?.getAttribute('content');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.setAttribute('name', 'description');
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.setAttribute('content', blog.excerpt || blog.title);
+
+      // Update OG Tags
+      const ogTags = [
+        { property: 'og:title', content: blog.title },
+        { property: 'og:description', content: blog.excerpt || blog.title },
+        { property: 'og:image', content: blog.image || '' },
+        { property: 'og:type', content: 'article' },
+        { property: 'og:url', content: window.location.href }
+      ];
+
+      const originalOgValues: Record<string, string | null> = {};
+
+      ogTags.forEach(tag => {
+        let element = document.querySelector(`meta[property="${tag.property}"]`);
+        originalOgValues[tag.property] = element?.getAttribute('content') || null;
+        if (!element) {
+          element = document.createElement('meta');
+          element.setAttribute('property', tag.property);
+          document.head.appendChild(element);
+        }
+        element.setAttribute('content', tag.content);
+      });
+
+      return () => {
+        document.title = originalTitle;
+        if (metaDescription) {
+          if (originalDescription) {
+            metaDescription.setAttribute('content', originalDescription);
+          } else {
+            metaDescription.remove();
+          }
+        }
+        ogTags.forEach(tag => {
+          let element = document.querySelector(`meta[property="${tag.property}"]`);
+          if (element) {
+            const originalValue = originalOgValues[tag.property];
+            if (originalValue) {
+              element.setAttribute('content', originalValue);
+            } else {
+              element.remove();
+            }
+          }
+        });
+      };
+    }
+  }, [blog]);
+
   if (loading) {
     return (
       <div className="pt-32 pb-24 flex items-center justify-center min-h-[60vh]">
@@ -553,6 +721,11 @@ export default function App() {
   const searchRef = useRef<HTMLDivElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [minPrice, setMinPrice] = useState<number | ''>('');
+  const [maxPrice, setMaxPrice] = useState<number | ''>('');
+  const [appliedMinPrice, setAppliedMinPrice] = useState<number | ''>('');
+  const [appliedMaxPrice, setAppliedMaxPrice] = useState<number | ''>('');
+  const [tempCategory, setTempCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [currentBlogPage, setCurrentBlogPage] = useState(1);
   const [sortBy, setSortBy] = useState<'newest' | 'name-asc'>('newest');
@@ -654,11 +827,12 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [showMeaningTooltip, setShowMeaningTooltip] = useState(false);
+  const relatedScrollRef = useRef<HTMLDivElement>(null);
 
   const relatedProducts = selectedProduct 
     ? products
         .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
-        .slice(0, 3)
+        .slice(0, 10)
     : [];
 
   useEffect(() => {
@@ -797,6 +971,16 @@ export default function App() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
+  const scrollRelated = (direction: 'left' | 'right') => {
+    if (relatedScrollRef.current) {
+      const scrollAmount = 300;
+      relatedScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   const validateCheckoutStep = (step: number) => {
     const errors: Record<string, string> = {};
     if (step === 2) {
@@ -852,18 +1036,22 @@ export default function App() {
 
   const uploadFile = async (file: File): Promise<string> => {
     setUploading(true);
+    console.log(`Starting upload for file: ${file.name} (${file.size} bytes)`);
     try {
       const formData = new FormData();
       formData.append('image', file);
+      
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
       
+      console.log(`Upload response status: ${res.status} ${res.statusText}`);
       const contentType = res.headers.get('content-type');
       const text = await res.text();
       
       if (!res.ok) {
+        console.error(`Upload failed with status ${res.status}:`, text.substring(0, 200));
         let errorMessage = `Upload failed with status ${res.status}`;
         if (contentType && contentType.includes('application/json')) {
           try {
@@ -879,15 +1067,24 @@ export default function App() {
       if (contentType && contentType.includes('application/json')) {
         try {
           const data = JSON.parse(text);
-          return data.url;
+          if (data.url) {
+            console.log('Upload successful, URL:', data.url);
+            return data.url;
+          } else {
+            console.error('Upload response missing URL:', data);
+            throw new Error('Server response missing image URL');
+          }
         } catch (e) {
           console.error('Failed to parse upload response as JSON:', text);
           throw new Error('Server returned invalid JSON response');
         }
       } else {
-        console.error('Server returned non-JSON response:', contentType, text.substring(0, 100));
-        throw new Error('Server returned invalid response format');
+        console.error('Server returned non-JSON response:', contentType, text.substring(0, 200));
+        throw new Error(`Server returned invalid response format: ${contentType || 'unknown'}`);
       }
+    } catch (error: any) {
+      console.error('uploadFile error:', error);
+      throw error;
     } finally {
       setUploading(false);
     }
@@ -1133,10 +1330,33 @@ export default function App() {
     const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const matchesMinPrice = appliedMinPrice === '' || (p.price || 0) >= appliedMinPrice;
+    const matchesMaxPrice = appliedMaxPrice === '' || (p.price || 0) <= appliedMaxPrice;
+    return matchesCategory && matchesSearch && matchesMinPrice && matchesMaxPrice;
   });
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const totalBlogPages = Math.ceil(blogs.length / BLOGS_PER_PAGE);
+
+  useEffect(() => {
+    if (currentBlogPage > totalBlogPages && totalBlogPages > 0) {
+      setCurrentBlogPage(totalBlogPages);
+    }
+  }, [totalBlogPages, currentBlogPage]);
+
+  const getPageNumbers = (current: number, total: number) => {
+    const pages = [];
+    const maxVisible = 5;
+    if (total <= maxVisible) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      let start = Math.max(1, current - 2);
+      let end = Math.min(total, start + maxVisible - 1);
+      if (end === total) start = Math.max(1, end - maxVisible + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+    }
+    return pages;
+  };
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -1144,7 +1364,7 @@ export default function App() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, searchQuery, sortBy]);
+  }, [activeCategory, searchQuery, sortBy, appliedMinPrice, appliedMaxPrice]);
 
   return (
     <div className="min-h-screen text-brand-brown font-sans relative overflow-x-hidden selection:bg-brand-blue/20 selection:text-brand-blue">
@@ -1395,6 +1615,8 @@ export default function App() {
                     <div className="relative z-10 rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white transform rotate-3 aspect-[4/5]">
                       <img 
                         src={optimizeImageUrl(settings.hero_image_url || "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11", 800)} 
+                        srcSet={`${optimizeImageUrl(settings.hero_image_url || "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11", 400)} 400w, ${optimizeImageUrl(settings.hero_image_url || "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11", 800)} 800w, ${optimizeImageUrl(settings.hero_image_url || "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11", 1200)} 1200w`}
+                        sizes="(max-width: 1024px) 100vw, 50vw"
                         alt="Featured Bouquet" 
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
@@ -1465,6 +1687,48 @@ export default function App() {
             {/* Products Grid */}
             <section id="products" className="py-24 bg-brand-bg">
               <div className="max-w-7xl mx-auto px-4">
+                {/* Category Banner */}
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    key={activeCategory}
+                    className="mb-12 rounded-[3rem] overflow-hidden h-64 sm:h-80 relative shadow-2xl border-8 border-white"
+                  >
+                    <img 
+                      src={optimizeImageUrl(
+                        activeCategory === 'all' 
+                          ? (settings.all_products_banner || "https://images.unsplash.com/photo-1490750967868-88aa4486c946")
+                          : (settings[`category_banner_${activeCategory}`] || CATEGORIES.find(c => c.id === activeCategory)?.image || PLACEHOLDER_IMAGE), 
+                        1200
+                      )} 
+                      srcSet={
+                        activeCategory === 'all'
+                          ? `${optimizeImageUrl(settings.all_products_banner || "https://images.unsplash.com/photo-1490750967868-88aa4486c946", 400)} 400w, ${optimizeImageUrl(settings.all_products_banner || "https://images.unsplash.com/photo-1490750967868-88aa4486c946", 800)} 800w, ${optimizeImageUrl(settings.all_products_banner || "https://images.unsplash.com/photo-1490750967868-88aa4486c946", 1200)} 1200w`
+                          : `${optimizeImageUrl(settings[`category_banner_${activeCategory}`] || CATEGORIES.find(c => c.id === activeCategory)?.image || PLACEHOLDER_IMAGE, 400)} 400w, ${optimizeImageUrl(settings[`category_banner_${activeCategory}`] || CATEGORIES.find(c => c.id === activeCategory)?.image || PLACEHOLDER_IMAGE, 800)} 800w, ${optimizeImageUrl(settings[`category_banner_${activeCategory}`] || CATEGORIES.find(c => c.id === activeCategory)?.image || PLACEHOLDER_IMAGE, 1200)} 1200w`
+                      }
+                      sizes="100vw"
+                      alt={activeCategory === 'all' ? 'Tất cả sản phẩm' : CATEGORIES.find(c => c.id === activeCategory)?.name} 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-brown/80 via-brand-brown/20 to-transparent flex items-center px-12">
+                      <div className="max-w-2xl">
+                        <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Bộ sưu tập</span>
+                        <h2 className="text-white text-4xl md:text-6xl font-serif font-black leading-tight">
+                          {activeCategory === 'all' ? 'Tất Cả Sản Phẩm' : CATEGORIES.find(c => c.id === activeCategory)?.name}
+                        </h2>
+                        <p className="text-white/60 mt-4 font-medium max-w-md">
+                          {activeCategory === 'all' 
+                            ? 'Khám phá bộ sưu tập hoa tươi nghệ thuật đa dạng tại Thanh Ngọc.' 
+                            : `Những mẫu ${CATEGORIES.find(c => c.id === activeCategory)?.name.toLowerCase()} tinh tế và đầy cảm xúc.`}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
                 <div className="flex flex-col lg:flex-row gap-12">
                   {/* Sidebar - Desktop */}
                   <aside className="hidden lg:block w-72 shrink-0">
@@ -1473,21 +1737,93 @@ export default function App() {
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-brown/40 mb-6">Danh Mục</h3>
                         <div className="flex flex-col gap-2">
                           <button 
-                            onClick={() => setActiveCategory('all')}
-                            className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategory === 'all' ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
+                            onClick={() => setTempCategory('all')}
+                            className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${tempCategory === 'all' ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
                           >
                             Tất Cả Sản Phẩm
                           </button>
                           {CATEGORIES.map((cat) => (
                             <button 
                               key={cat.id}
-                              onClick={() => setActiveCategory(cat.id)}
-                              className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategory === cat.id ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
+                              onClick={() => setTempCategory(cat.id)}
+                              className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${tempCategory === cat.id ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
                             >
                               {cat.name}
                             </button>
                           ))}
                         </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-brown/40 mb-6">Khoảng Giá (VNĐ)</h3>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-2">Từ</label>
+                              <input 
+                                type="number" 
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                placeholder="0"
+                                className="w-full px-4 py-3 rounded-xl bg-white border border-brand-brown/5 outline-none focus:border-brand-blue font-bold text-brand-brown"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-2">Đến</label>
+                              <input 
+                                type="number" 
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                placeholder="5.000.000"
+                                className="w-full px-4 py-3 rounded-xl bg-white border border-brand-brown/5 outline-none focus:border-brand-blue font-bold text-brand-brown"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { label: '< 500k', min: '', max: 500000 },
+                              { label: '500k - 1tr', min: 500000, max: 1000000 },
+                              { label: '> 1tr', min: 1000000, max: '' }
+                            ].map((range, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setMinPrice(range.min);
+                                  setMaxPrice(range.max);
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-brand-paper border border-brand-brown/5 text-[10px] font-black uppercase tracking-widest text-brand-brown/60 hover:bg-brand-brown hover:text-white transition-all"
+                              >
+                                {range.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-6 border-t border-brand-brown/5 space-y-4">
+                        <button 
+                          onClick={() => {
+                            setActiveCategory(tempCategory);
+                            setAppliedMinPrice(minPrice);
+                            setAppliedMaxPrice(maxPrice);
+                          }}
+                          className="w-full bg-brand-brown text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
+                        >
+                          Áp Dụng
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setMinPrice('');
+                            setMaxPrice('');
+                            setTempCategory('all');
+                            setAppliedMinPrice('');
+                            setAppliedMaxPrice('');
+                            setActiveCategory('all');
+                          }}
+                          className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-brand-brown/40 hover:text-brand-orange transition-all"
+                        >
+                          Đặt lại
+                        </button>
                       </div>
 
 
@@ -1557,6 +1893,8 @@ export default function App() {
                                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-brand-brown/5">
                                         <img 
                                           src={optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 100)} 
+                                          srcSet={`${optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 100)} 100w, ${optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 200)} 200w`}
+                                          sizes="100px"
                                           alt={product.name}
                                           className="w-full h-full object-cover"
                                           referrerPolicy="no-referrer"
@@ -1626,6 +1964,11 @@ export default function App() {
                           onClick={() => {
                             setActiveCategory('all');
                             setSearchQuery('');
+                            setAppliedMinPrice('');
+                            setAppliedMaxPrice('');
+                            setMinPrice('');
+                            setMaxPrice('');
+                            setTempCategory('all');
                           }}
                           className="px-8 py-4 bg-brand-brown text-brand-bg rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all"
                         >
@@ -1650,9 +1993,11 @@ export default function App() {
                                 <div className="relative aspect-[4/5] overflow-hidden bg-brand-brown/5">
                                   <img 
                                     src={optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 600)} 
+                                    srcSet={`${optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 400)} 400w, ${optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 800)} 800w, ${optimizeImageUrl(product.image || PLACEHOLDER_IMAGE, 1200)} 1200w`}
+                                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                                     alt={product.alt_text || `${product.name} - ${product.meaning || ''} - Màu ${product.color || ''} - Size ${product.size || ''}`} 
                                     title={`${product.name} - ${product.meaning || ''}`}
-                                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 opacity-0"
+                                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 group-hover:animate-shake opacity-0"
                                     referrerPolicy="no-referrer"
                                     loading="lazy"
                                     onLoad={(e) => {
@@ -1771,25 +2116,34 @@ export default function App() {
                           <div className="mt-20 flex justify-center items-center gap-3">
                             <button 
                               disabled={currentPage === 1}
-                              onClick={() => setCurrentPage(prev => prev - 1)}
+                              onClick={() => {
+                                setCurrentPage(prev => Math.max(1, prev - 1));
+                                document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
                               className="p-4 rounded-2xl border border-brand-brown/5 bg-white text-brand-brown disabled:opacity-30 hover:bg-brand-paper transition-all shadow-lg"
                             >
                               <ChevronLeft size={20} />
                             </button>
                             <div className="flex gap-2">
-                              {[...Array(totalPages)].map((_, i) => (
+                              {getPageNumbers(currentPage, totalPages).map((pageNum) => (
                                 <button 
-                                  key={i}
-                                  onClick={() => setCurrentPage(i + 1)}
-                                  className={`w-12 h-12 rounded-2xl font-black text-xs transition-all shadow-lg ${currentPage === i + 1 ? 'bg-brand-brown text-brand-bg' : 'bg-white text-brand-brown border border-brand-brown/5 hover:bg-brand-paper'}`}
+                                  key={pageNum}
+                                  onClick={() => {
+                                    setCurrentPage(pageNum);
+                                    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                                  }}
+                                  className={`w-12 h-12 rounded-2xl font-black text-xs transition-all shadow-lg ${currentPage === pageNum ? 'bg-brand-brown text-brand-bg' : 'bg-white text-brand-brown border border-brand-brown/5 hover:bg-brand-paper'}`}
                                 >
-                                  {i + 1}
+                                  {pageNum}
                                 </button>
                               ))}
                             </div>
                             <button 
                               disabled={currentPage === totalPages}
-                              onClick={() => setCurrentPage(prev => prev + 1)}
+                              onClick={() => {
+                                setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                                document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                              }}
                               className="p-4 rounded-2xl border border-brand-brown/5 bg-white text-brand-brown disabled:opacity-30 hover:bg-brand-paper transition-all shadow-lg"
                             >
                               <ChevronRight size={20} />
@@ -1854,7 +2208,7 @@ export default function App() {
                       <div className="relative aspect-[16/10] overflow-hidden">
                         <img 
                           src={optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 600)} 
-                          srcSet={`${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 400)} 400w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 800)} 800w`}
+                          srcSet={`${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 400)} 400w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 800)} 800w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/800/600`, 1200)} 1200w`}
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           alt={blog.title} 
                           className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
@@ -1919,8 +2273,15 @@ export default function App() {
                   ))}
                 </div>
 
+                {blogs.length === 0 && (
+                  <div className="text-center py-20 bg-white rounded-[3rem] border border-brand-brown/5 shadow-sm">
+                    <Flower2 size={48} className="mx-auto text-brand-blue/20 mb-6" />
+                    <p className="text-brand-brown/40 font-black uppercase tracking-widest text-xs">Chưa có bài viết nào được đăng tải</p>
+                  </div>
+                )}
+
                 {/* Blog Pagination */}
-                {blogs.length > BLOGS_PER_PAGE && (
+                {totalBlogPages > 1 && (
                   <div className="mt-20 flex flex-col items-center gap-8">
                     <div className="flex items-center gap-3">
                       <button 
@@ -1935,33 +2296,33 @@ export default function App() {
                       </button>
                       
                       <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-brand-brown/5 shadow-sm">
-                        {Array.from({ length: Math.ceil(blogs.length / BLOGS_PER_PAGE) }).map((_, i) => (
+                        {getPageNumbers(currentBlogPage, totalBlogPages).map((pageNum) => (
                           <button
-                            key={i}
+                            key={pageNum}
                             onClick={() => {
-                              setCurrentBlogPage(i + 1);
+                              setCurrentBlogPage(pageNum);
                               document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' });
                             }}
-                            className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all ${currentBlogPage === i + 1 ? 'bg-brand-brown text-brand-bg shadow-lg' : 'text-brand-brown/40 hover:bg-brand-bg hover:text-brand-brown'}`}
+                            className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all ${currentBlogPage === pageNum ? 'bg-brand-brown text-brand-bg shadow-lg' : 'text-brand-brown/40 hover:bg-brand-bg hover:text-brand-brown'}`}
                           >
-                            {i + 1}
+                            {pageNum}
                           </button>
                         ))}
                       </div>
 
                       <button 
                         onClick={() => {
-                          setCurrentBlogPage(prev => Math.min(Math.ceil(blogs.length / BLOGS_PER_PAGE), prev + 1));
+                          setCurrentBlogPage(prev => Math.min(totalBlogPages, prev + 1));
                           document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' });
                         }}
-                        disabled={currentBlogPage === Math.ceil(blogs.length / BLOGS_PER_PAGE)}
-                        className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all border ${currentBlogPage === Math.ceil(blogs.length / BLOGS_PER_PAGE) ? 'border-brand-brown/5 text-brand-brown/20' : 'border-brand-brown/10 text-brand-brown hover:bg-brand-brown hover:text-white shadow-xl shadow-brand-brown/5'}`}
+                        disabled={currentBlogPage === totalBlogPages}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all border ${currentBlogPage === totalBlogPages ? 'border-brand-brown/5 text-brand-brown/20' : 'border-brand-brown/10 text-brand-brown hover:bg-brand-brown hover:text-white shadow-xl shadow-brand-brown/5'}`}
                       >
                         <ChevronRight size={20} />
                       </button>
                     </div>
                     <p className="text-[10px] font-black text-brand-brown/30 uppercase tracking-[0.2em]">
-                      Trang {currentBlogPage} / {Math.ceil(blogs.length / BLOGS_PER_PAGE)}
+                      Trang {currentBlogPage} / {totalBlogPages}
                     </p>
                   </div>
                 )}
@@ -2056,7 +2417,7 @@ export default function App() {
               </p>
               <div className="flex gap-4 mt-8">
                 <a 
-                  href="https://facebook.com" 
+                  href="https://www.facebook.com/profile.php?id=61583985245876" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-brand-blue hover:border-brand-blue transition-all group"
@@ -2074,7 +2435,7 @@ export default function App() {
                   <Instagram size={20} />
                 </a>
                 <a 
-                  href="https://zalo.me" 
+                  href="https://zalo.me/0934926092" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-brand-blue hover:border-brand-blue transition-all group"
@@ -2473,16 +2834,16 @@ export default function App() {
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-brown/40 mb-6">Danh Mục</h3>
                   <div className="flex flex-col gap-2">
                     <button 
-                      onClick={() => { setActiveCategory('all'); setIsFilterOpen(false); }}
-                      className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategory === 'all' ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
+                      onClick={() => setTempCategory('all')}
+                      className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${tempCategory === 'all' ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
                     >
                       Tất Cả Sản Phẩm
                     </button>
                     {CATEGORIES.map((cat) => (
                       <button 
                         key={cat.id}
-                        onClick={() => { setActiveCategory(cat.id); setIsFilterOpen(false); }}
-                        className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${activeCategory === cat.id ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
+                        onClick={() => setTempCategory(cat.id)}
+                        className={`text-left px-4 py-3 rounded-xl font-bold transition-all ${tempCategory === cat.id ? 'bg-brand-brown text-brand-bg shadow-lg' : 'hover:bg-brand-paper text-brand-brown/60'}`}
                       >
                         {cat.name}
                       </button>
@@ -2490,14 +2851,77 @@ export default function App() {
                   </div>
                 </div>
 
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-brown/40 mb-6">Khoảng Giá (VNĐ)</h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-2">Từ</label>
+                        <input 
+                          type="number" 
+                          value={minPrice}
+                          onChange={(e) => setMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="0"
+                          className="w-full px-4 py-3 rounded-xl bg-white border border-brand-brown/5 outline-none focus:border-brand-blue font-bold text-brand-brown"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-2">Đến</label>
+                        <input 
+                          type="number" 
+                          value={maxPrice}
+                          onChange={(e) => setMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="5.000.000"
+                          className="w-full px-4 py-3 rounded-xl bg-white border border-brand-brown/5 outline-none focus:border-brand-blue font-bold text-brand-brown"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: '< 500k', min: '', max: 500000 },
+                        { label: '500k - 1tr', min: 500000, max: 1000000 },
+                        { label: '> 1tr', min: 1000000, max: '' }
+                      ].map((range, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setMinPrice(range.min);
+                            setMaxPrice(range.max);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-brand-paper border border-brand-brown/5 text-[10px] font-black uppercase tracking-widest text-brand-brown/60 hover:bg-brand-brown hover:text-white transition-all"
+                        >
+                          {range.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-8 border-t border-brand-brown/5 bg-brand-paper">
+              <div className="p-8 border-t border-brand-brown/5 bg-brand-paper space-y-4">
                 <button 
-                  onClick={() => setIsFilterOpen(false)}
+                  onClick={() => {
+                    setActiveCategory(tempCategory);
+                    setAppliedMinPrice(minPrice);
+                    setAppliedMaxPrice(maxPrice);
+                    setIsFilterOpen(false);
+                  }}
                   className="w-full bg-brand-brown text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
                 >
                   Áp Dụng
+                </button>
+                <button 
+                  onClick={() => {
+                    setMinPrice('');
+                    setMaxPrice('');
+                    setTempCategory('all');
+                    setAppliedMinPrice('');
+                    setAppliedMaxPrice('');
+                    setActiveCategory('all');
+                  }}
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-brand-brown/40 hover:text-brand-orange transition-all"
+                >
+                  Đặt lại
                 </button>
               </div>
             </motion.div>
@@ -2537,7 +2961,9 @@ export default function App() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      src={optimizeImageUrl([selectedProduct.image, ...JSON.parse(selectedProduct.images || '[]')][activeDetailImage] || PLACEHOLDER_IMAGE, 1000)} 
+                      src={optimizeImageUrl([selectedProduct.image, ...JSON.parse(selectedProduct.images || '[]')][activeDetailImage] || PLACEHOLDER_IMAGE, 1200)} 
+                      srcSet={`${optimizeImageUrl([selectedProduct.image, ...JSON.parse(selectedProduct.images || '[]')][activeDetailImage] || PLACEHOLDER_IMAGE, 400)} 400w, ${optimizeImageUrl([selectedProduct.image, ...JSON.parse(selectedProduct.images || '[]')][activeDetailImage] || PLACEHOLDER_IMAGE, 800)} 800w, ${optimizeImageUrl([selectedProduct.image, ...JSON.parse(selectedProduct.images || '[]')][activeDetailImage] || PLACEHOLDER_IMAGE, 1200)} 1200w, ${optimizeImageUrl([selectedProduct.image, ...JSON.parse(selectedProduct.images || '[]')][activeDetailImage] || PLACEHOLDER_IMAGE, 1600)} 1600w`}
+                      sizes="(max-width: 768px) 100vw, 50vw"
                       alt={selectedProduct.alt_text || `${selectedProduct.name} - ${selectedProduct.meaning || ''} - Màu ${selectedProduct.color || ''} - Size ${selectedProduct.size || ''}`}
                       title={`${selectedProduct.name} - ${selectedProduct.meaning || ''}`}
                       className="w-full h-full object-cover"
@@ -2700,27 +3126,52 @@ export default function App() {
                   {/* Related Products Section */}
                   {relatedProducts.length > 0 && (
                     <div className="pt-10 border-t border-brand-brown/5">
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-orange mb-8">Sản phẩm liên quan</h4>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="flex items-center justify-between mb-8">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-orange">Sản phẩm liên quan</h4>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => scrollRelated('left')}
+                            className="w-8 h-8 rounded-full bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-md"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button 
+                            onClick={() => scrollRelated('right')}
+                            className="w-8 h-8 rounded-full bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-md"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div 
+                        ref={relatedScrollRef}
+                        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
                         {relatedProducts.map((p) => (
                           <div 
                             key={p.id} 
                             onClick={() => {
                               setSelectedProduct(p);
                               setActiveDetailImage(0);
+                              if (relatedScrollRef.current) {
+                                relatedScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                              }
                             }}
-                            className="group cursor-pointer"
+                            className="min-w-[140px] sm:min-w-[180px] group cursor-pointer snap-start"
                           >
                             <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-3 bg-brand-paper">
                               <img 
                                 src={optimizeImageUrl(p.image, 300)} 
                                 alt={p.name}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:animate-shake"
                                 loading="lazy"
                                 referrerPolicy="no-referrer"
                               />
                             </div>
                             <h5 className="text-[10px] font-bold text-brand-brown truncate group-hover:text-brand-blue transition-colors">{p.name}</h5>
+                            <p className="text-[9px] font-black text-brand-orange mt-1">{formatPrice(p.price)}</p>
                           </div>
                         ))}
                       </div>
@@ -3197,43 +3648,87 @@ export default function App() {
                 {/* Category Images Section */}
                 <section>
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-blue mb-8 flex items-center gap-2">
-                    <ShoppingBasket size={18} /> Ảnh Danh Mục Sản Phẩm
+                    <ShoppingBasket size={18} /> Ảnh & Banner Danh Mục Sản Phẩm
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {CATEGORIES.map(cat => (
-                      <div key={cat.id} className="p-6 bg-white rounded-[2rem] border border-brand-brown/5 shadow-sm space-y-4 group">
+                      <div key={cat.id} className="p-8 bg-white rounded-[2.5rem] border border-brand-brown/5 shadow-sm space-y-6 group">
                         <div className="flex justify-between items-center">
-                          <h5 className="text-[10px] font-black uppercase tracking-widest text-brand-brown">{cat.name}</h5>
+                          <h5 className="text-xs font-black uppercase tracking-widest text-brand-brown">{cat.name}</h5>
                         </div>
-                        <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-brand-bg border border-brand-brown/10 relative">
-                          <img 
-                            src={optimizeImageUrl(settings[`category_image_${cat.id}`] || cat.image || PLACEHOLDER_IMAGE, 400)} 
-                            alt={cat.name} 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-brand-brown/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-6">
-                            <div className="relative w-full">
-                              <input 
-                                type="file" 
-                                accept="image/*"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    try {
-                                      const url = await uploadFile(file);
-                                      handleSaveSettings({ [`category_image_${cat.id}`]: url });
-                                    } catch (error) {
-                                      console.error('Category image upload error:', error);
-                                      alert('Lỗi tải ảnh danh mục: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
-                                    }
-                                  }
-                                }}
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                          {/* Thumbnail Image */}
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-brand-brown/40 uppercase tracking-widest block">Ảnh Đại Diện</label>
+                            <div className="aspect-square rounded-2xl overflow-hidden bg-brand-bg border border-brand-brown/10 relative group/thumb">
+                              <img 
+                                src={optimizeImageUrl(settings[`category_image_${cat.id}`] || cat.image || PLACEHOLDER_IMAGE, 400)} 
+                                alt={cat.name} 
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
                               />
-                              <button className="w-full py-3 bg-white text-brand-brown rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2">
-                                <Upload size={14} /> Thay đổi ảnh
-                              </button>
+                              <div className="absolute inset-0 bg-brand-brown/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center p-4">
+                                <div className="relative w-full">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        try {
+                                          const url = await uploadFile(file);
+                                          handleSaveSettings({ [`category_image_${cat.id}`]: url });
+                                        } catch (error) {
+                                          console.error('Category image upload error:', error);
+                                          alert('Lỗi tải ảnh danh mục: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                  />
+                                  <button className="w-full py-2 bg-white text-brand-brown rounded-lg font-black uppercase tracking-widest text-[8px] shadow-xl flex items-center justify-center gap-2">
+                                    <Upload size={12} /> Thay đổi
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Banner Image */}
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-brand-brown/40 uppercase tracking-widest block">Ảnh Banner</label>
+                            <div className="aspect-square rounded-2xl overflow-hidden bg-brand-bg border border-brand-brown/10 relative group/banner">
+                              <img 
+                                src={optimizeImageUrl(settings[`category_banner_${cat.id}`] || PLACEHOLDER_IMAGE, 400)} 
+                                alt={`${cat.name} Banner`} 
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-brand-brown/40 opacity-0 group-hover/banner:opacity-100 transition-opacity flex items-center justify-center p-4">
+                                <div className="relative w-full">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        try {
+                                          const url = await uploadFile(file);
+                                          handleSaveSettings({ [`category_banner_${cat.id}`]: url });
+                                        } catch (error) {
+                                          console.error('Category banner upload error:', error);
+                                          alert('Lỗi tải banner danh mục: ' + (error instanceof Error ? error.message : 'Lỗi không xác định'));
+                                        }
+                                      }
+                                    }}
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                  />
+                                  <button className="w-full py-2 bg-white text-brand-brown rounded-lg font-black uppercase tracking-widest text-[8px] shadow-xl flex items-center justify-center gap-2">
+                                    <Upload size={12} /> Thay đổi
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -3346,6 +3841,8 @@ export default function App() {
                             <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-brand-brown/5">
                               <img 
                                 src={optimizeImageUrl(item.product.image, 200)} 
+                                srcSet={`${optimizeImageUrl(item.product.image, 200)} 200w, ${optimizeImageUrl(item.product.image, 400)} 400w`}
+                                sizes="100px"
                                 alt={item.product.name} 
                                 className="w-full h-full object-cover" 
                                 loading="lazy"
@@ -3418,7 +3915,7 @@ export default function App() {
                             setOrderForm({ ...orderForm, customerPhone: e.target.value });
                             if (validationErrors.customerPhone) setValidationErrors(prev => ({ ...prev, customerPhone: '' }));
                           }}
-                          placeholder="090 123 4567"
+                          placeholder="0934 926 092"
                           className={`w-full px-6 py-4 rounded-2xl bg-white border ${validationErrors.customerPhone ? 'border-red-500 ring-4 ring-red-500/5' : 'border-brand-brown/10'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-bold text-brand-brown`}
                         />
                         {validationErrors.customerPhone && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest ml-4">{validationErrors.customerPhone}</p>}
@@ -3535,6 +4032,8 @@ export default function App() {
                                 <div className="w-12 h-12 rounded-xl overflow-hidden border border-brand-brown/5">
                                   <img 
                                     src={optimizeImageUrl(item.product.image, 100)} 
+                                    srcSet={`${optimizeImageUrl(item.product.image, 100)} 100w, ${optimizeImageUrl(item.product.image, 200)} 200w`}
+                                    sizes="50px"
                                     alt={item.product.name} 
                                     className="w-full h-full object-cover" 
                                     loading="lazy"

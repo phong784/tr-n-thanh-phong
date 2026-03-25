@@ -46,7 +46,7 @@ export default function AIAssistant({ products }: AIAssistantProps) {
       const systemInstruction = `
         Bạn là trợ lý ảo thông minh của cửa hàng "Hoa Tươi Thanh Ngọc". 
         Địa chỉ: 8 Phan Văn Hân, Phường 19, Bình Thạnh, TP. Hồ Chí Minh.
-        Số điện thoại: 0777 110 959.
+        Số điện thoại: 0934 926 092.
         
         Nhiệm vụ của bạn:
         1. Tư vấn nhiệt tình, lịch sự và chuyên nghiệp cho khách hàng về việc chọn hoa.
@@ -77,7 +77,7 @@ export default function AIAssistant({ products }: AIAssistantProps) {
       setMessages(prev => [...prev, { role: 'model', text: aiText }]);
     } catch (error) {
       console.error('Gemini Error:', error);
-      setMessages(prev => [...prev, { role: 'model', text: "Rất tiếc, tôi không thể kết nối lúc này. Vui lòng liên hệ hotline 0777 110 959 để được hỗ trợ trực tiếp nhé!" }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Rất tiếc, tôi không thể kết nối lúc này. Vui lòng liên hệ hotline 0934 926 092 để được hỗ trợ trực tiếp nhé!" }]);
     } finally {
       setIsLoading(false);
     }

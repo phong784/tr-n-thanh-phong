@@ -30,52 +30,19 @@ import {
   ShoppingBag,
   CreditCard,
   Truck,
-  Check
+  Check,
+  Home
 } from 'lucide-react';
 import { Product, Category, Blog, CartItem, Order } from './types';
 import AIAssistant from './components/AIAssistant';
+import BlogDetailPage from './components/BlogDetailPage';
+import AboutPage from './components/AboutPage';
+import ContactPage from './components/ContactPage';
+import OffersPage from './components/OffersPage';
 import { CATEGORIES, CONTACT_INFO, PLACEHOLDER_IMAGE, ABOUT_US, LOGO_URL } from './constants';
+import { optimizeImageUrl } from './utils';
 
 // --- Utils ---
-
-const optimizeImageUrl = (url: string, width: number = 800) => {
-  if (!url) return PLACEHOLDER_IMAGE;
-  
-  // Check if it's a local URL (relative or same origin)
-  const isLocal = url.startsWith('/') || (typeof window !== 'undefined' && url.startsWith(window.location.origin));
-  const isUpload = url.includes('/uploads/');
-  const isCommonImage = url.toLowerCase().endsWith('.png') || url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg');
-
-  if (isUpload || (isLocal && isCommonImage)) {
-    // Normalize local URL to relative path for the API
-    let localPath = url;
-    if (typeof window !== 'undefined' && url.startsWith(window.location.origin)) {
-      localPath = url.replace(window.location.origin, '');
-    }
-    return `/api/img-optimize?src=${encodeURIComponent(localPath)}&w=${width}`;
-  }
-
-  // Unsplash optimization
-  if (url.includes('images.unsplash.com')) {
-    const baseUrl = url.split('?')[0];
-    return `${baseUrl}?auto=format&fit=crop&q=80&w=${width}&fm=webp`;
-  }
-  
-  // Picsum optimization (limited, but we can set dimensions)
-  if (url.includes('picsum.photos')) {
-    const baseUrl = url.split('?')[0];
-    const parts = baseUrl.split('/');
-    // If it's a seed URL like https://picsum.photos/seed/abc/800/600
-    if (baseUrl.includes('/seed/')) {
-      const seedIndex = parts.indexOf('seed');
-      const seed = parts[seedIndex + 1];
-      return `https://picsum.photos/seed/${seed}/${width}/${Math.round(width * 0.75)}.webp`;
-    }
-    return `${baseUrl}/${width}/${Math.round(width * 0.75)}.webp`;
-  }
-
-  return url;
-};
 
 const HighlightedText = ({ text, highlight }: { text: string, highlight: string }) => {
   if (!highlight.trim()) {
@@ -101,385 +68,6 @@ const HighlightedText = ({ text, highlight }: { text: string, highlight: string 
 };
 
 // --- Components ---
-
-const AboutPage = ({ onBack }: { onBack: () => void }) => (
-  <motion.div 
-    initial={{ opacity: 0, x: 20 }}
-    animate={{ opacity: 1, x: 0 }}
-    exit={{ opacity: 0, x: -20 }}
-    className="pt-32 pb-24 bg-brand-bg"
-  >
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="flex items-center gap-4 mb-16">
-        <button 
-          onClick={onBack}
-          className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
-        >
-          <ChevronLeft size={24} />
-        </button>
-        <h2 className="text-4xl md:text-6xl font-serif font-black text-brand-brown leading-tight">Về Chúng Tôi</h2>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-24">
-        <div className="relative">
-          <div className="rounded-[4rem] overflow-hidden shadow-2xl border-[12px] border-white transform -rotate-3 aspect-[4/5]">
-            <img 
-              src={optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 800)} 
-              srcSet={`${optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 400)} 400w, ${optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 800)} 800w, ${optimizeImageUrl("https://images.unsplash.com/photo-1526047932273-341f2a7631f9", 1200)} 1200w`}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              alt="Our Story" 
-              className="w-full h-full object-cover"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-orange/10 rounded-full blur-3xl"></div>
-        </div>
-        <div>
-          <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Câu chuyện của chúng tôi</span>
-          <h3 className="text-3xl md:text-5xl font-serif font-black text-brand-brown mb-8 leading-tight">Hành Trình Của Những <br /><span className="text-brand-blue italic font-normal">Cánh Hoa</span></h3>
-          <p className="text-brand-brown/60 text-lg leading-relaxed font-medium mb-8 italic serif">
-            "{ABOUT_US.story}"
-          </p>
-          <div className="p-8 bg-brand-paper rounded-3xl border border-brand-brown/5">
-            <span className="text-brand-blue font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Sứ mệnh</span>
-            <p className="text-brand-brown font-bold text-xl leading-relaxed">
-              {ABOUT_US.mission}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-        {ABOUT_US.values.map((value, idx) => (
-          <div key={idx} className="p-10 bg-white rounded-[2.5rem] border border-brand-brown/5 shadow-xl hover:shadow-2xl transition-all group">
-            <div className="w-16 h-16 bg-brand-bg rounded-2xl flex items-center justify-center text-brand-blue mb-8 group-hover:bg-brand-blue group-hover:text-white transition-all">
-              <Star size={28} />
-            </div>
-            <h4 className="text-2xl font-serif font-black text-brand-brown mb-4">{value.title}</h4>
-            <p className="text-brand-brown/60 font-medium leading-relaxed">{value.description}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </motion.div>
-);
-
-const ContactPage = ({ onBack }: { onBack: () => void }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    message: ''
-  });
-  const [errors, setErrors] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const validate = () => {
-    let isValid = true;
-    const newErrors = { name: '', phone: '', email: '', message: '' };
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Vui lòng nhập họ và tên';
-      isValid = false;
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Vui lòng nhập số điện thoại';
-      isValid = false;
-    } else if (!/^\d{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ (10-11 chữ số)';
-      isValid = false;
-    }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
-      isValid = false;
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = 'Vui lòng nhập lời nhắn';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validate()) {
-      setIsSubmitting(true);
-      // Simulate API call
-      setTimeout(() => {
-        alert('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất.');
-        setFormData({ name: '', phone: '', email: '', message: '' });
-        setIsSubmitting(false);
-      }, 1000);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
-    if (errors[name as keyof typeof errors]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="pt-32 pb-24 bg-brand-bg"
-    >
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center gap-4 mb-16">
-          <button 
-            onClick={onBack}
-            className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <h2 className="text-4xl md:text-6xl font-serif font-black text-brand-brown leading-tight">Liên Hệ</h2>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          <div className="space-y-12">
-            <div>
-              <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-4 block">Thông tin liên lạc</span>
-              <h3 className="text-3xl font-serif font-black text-brand-brown mb-8">Ghé Thăm Cửa Hàng <br /><span className="text-brand-blue italic font-normal">Thanh Ngọc</span></h3>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
-                  <div className="w-12 h-12 bg-brand-blue/10 rounded-2xl flex items-center justify-center text-brand-blue shrink-0">
-                    <MapPin size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Địa chỉ</h4>
-                    <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.address}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
-                  <div className="w-12 h-12 bg-brand-orange/10 rounded-2xl flex items-center justify-center text-brand-orange shrink-0">
-                    <Phone size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Điện thoại</h4>
-                    <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.phone}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-6 bg-white rounded-3xl border border-brand-brown/5 shadow-lg">
-                  <div className="w-12 h-12 bg-brand-brown/10 rounded-2xl flex items-center justify-center text-brand-brown shrink-0">
-                    <Clock size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-brand-brown text-sm uppercase tracking-wider mb-1">Giờ mở cửa</h4>
-                    <p className="text-brand-brown/60 font-medium">{CONTACT_INFO.hours}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl h-80">
-              <iframe 
-                src={CONTACT_INFO.maps_embed} 
-                width="100%" 
-                height="100%" 
-                style={{ border: 0 }} 
-                allowFullScreen 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
-            </div>
-          </div>
-
-          <div className="bg-brand-paper p-10 md:p-16 rounded-[4rem] border border-brand-brown/5 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="relative z-10">
-              <h3 className="text-3xl font-serif font-black text-brand-brown mb-4">Gửi Lời Nhắn</h3>
-              <p className="text-brand-brown/60 font-medium mb-10">Chúng tôi luôn sẵn sàng lắng nghe và tư vấn cho bạn những mẫu hoa tuyệt vời nhất.</p>
-              
-              <form className="space-y-6" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Họ và tên</label>
-                    <input 
-                      type="text" 
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Nguyễn Văn A" 
-                      className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.name ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium`} 
-                    />
-                    {errors.name && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.name}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Số điện thoại</label>
-                    <input 
-                      type="tel" 
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="0934 926 092" 
-                      className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.phone ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium`} 
-                    />
-                    {errors.phone && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.phone}</p>}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Email (không bắt buộc)</label>
-                  <input 
-                    type="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="email@example.com" 
-                    className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.email ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium`} 
-                  />
-                  {errors.email && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.email}</p>}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-brand-brown/40 ml-4">Lời nhắn</label>
-                  <textarea 
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    rows={4} 
-                    placeholder="Tôi muốn tư vấn về hoa sinh nhật..." 
-                    className={`w-full px-6 py-4 rounded-2xl bg-white border ${errors.message ? 'border-red-500' : 'border-brand-brown/5'} focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium resize-none`} 
-                  ></textarea>
-                  {errors.message && <p className="text-red-500 text-[10px] font-bold ml-4">{errors.message}</p>}
-                </div>
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full py-5 bg-brand-brown text-brand-bg rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? 'Đang gửi...' : 'Gửi Yêu Cầu'} <MessageCircle size={18} />
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const OffersPage = ({ onBack, onShopNow }: { onBack: () => void, onShopNow: () => void }) => {
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 bg-brand-blue text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce';
-    toast.innerText = "Cảm ơn bạn đã đăng ký nhận tin!";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-    (e.target as HTMLFormElement).reset();
-  };
-
-  const handleClaimOffer = () => {
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 bg-brand-orange text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-bounce';
-    toast.innerText = "Mã ưu đãi WELCOME20 đã được lưu!";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  };
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="pt-32 pb-24 bg-brand-bg"
-    >
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center gap-4 mb-16">
-          <button 
-            onClick={onBack}
-            className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <h2 className="text-4xl md:text-6xl font-serif font-black text-brand-brown leading-tight">Ưu Đãi Đặc Biệt</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-20">
-          <div className="group relative h-[500px] rounded-[4rem] overflow-hidden shadow-2xl">
-            <img 
-              src={optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 800)} 
-              srcSet={`${optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 400)} 400w, ${optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 800)} 800w, ${optimizeImageUrl("https://images.unsplash.com/photo-1523694576729-dc99e9c0f9b4", 1200)} 1200w`}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-              alt="Special Offer 1" 
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-brown via-brand-brown/20 to-transparent"></div>
-            <div className="absolute bottom-12 left-12 right-12">
-              <span className="px-4 py-1.5 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest rounded-full mb-4 inline-block">Giảm 20%</span>
-              <h3 className="text-4xl font-serif font-black text-white mb-4">Chào Mừng Thành Viên Mới</h3>
-              <p className="text-white/70 font-medium mb-8">Nhận ngay ưu đãi giảm giá cho đơn hàng đầu tiên khi đăng ký thành viên tại Thanh Ngọc.</p>
-              <button 
-                onClick={handleClaimOffer}
-                className="px-8 py-4 bg-white text-brand-brown rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue hover:text-white transition-all cursor-pointer"
-              >
-                Nhận Ưu Đãi
-              </button>
-            </div>
-          </div>
-
-          <div className="group relative h-[500px] rounded-[4rem] overflow-hidden shadow-2xl">
-            <img 
-              src={optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 800)} 
-              srcSet={`${optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 400)} 400w, ${optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 800)} 800w, ${optimizeImageUrl("https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf", 1200)} 1200w`}
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-              alt="Special Offer 2" 
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-blue via-brand-blue/20 to-transparent"></div>
-            <div className="absolute bottom-12 left-12 right-12">
-              <span className="px-4 py-1.5 bg-white text-brand-blue text-[10px] font-black uppercase tracking-widest rounded-full mb-4 inline-block">Miễn Phí Vận Chuyển</span>
-              <h3 className="text-4xl font-serif font-black text-white mb-4">Đơn Hàng Từ 1.000.000đ</h3>
-              <p className="text-white/70 font-medium mb-8">Áp dụng cho tất cả các đơn hàng trong khu vực nội thành TP. Hồ Chí Minh.</p>
-              <button 
-                onClick={onShopNow}
-                className="px-8 py-4 bg-white text-brand-blue rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown hover:text-white transition-all cursor-pointer"
-              >
-                Mua Ngay
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-12 md:p-20 rounded-[4rem] border border-brand-brown/5 shadow-xl text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-brand-orange/5 rounded-full blur-3xl -ml-32 -mt-32"></div>
-          <div className="relative z-10 max-w-2xl mx-auto">
-            <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px] mb-6 block">Đăng ký nhận tin</span>
-            <h3 className="text-4xl md:text-5xl font-serif font-black text-brand-brown mb-6">Đừng Bỏ Lỡ Bất Kỳ <br /><span className="text-brand-blue italic font-normal">Ưu Đãi</span> Nào</h3>
-            <p className="text-brand-brown/60 font-medium mb-10 text-lg">Chúng tôi sẽ gửi cho bạn những thông tin về bộ sưu tập mới và các chương trình khuyến mãi đặc biệt hàng tháng.</p>
-            
-            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4">
-              <input required type="email" placeholder="Email của bạn..." className="flex-1 px-8 py-5 rounded-2xl bg-brand-bg border border-brand-brown/5 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/5 outline-none transition-all font-medium" />
-              <button type="submit" className="px-10 py-5 bg-brand-blue text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-brand-brown transition-all shadow-xl shadow-brand-blue/20 cursor-pointer">Đăng Ký Ngay</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 const Logo = ({ className = "", onClick, logoUrl }: { className?: string, onClick?: () => void, logoUrl?: string }) => (
   <div 
@@ -522,188 +110,6 @@ const CategoryIcon = ({ icon, className }: { icon: string, className?: string })
   }
 };
 
-const BlogDetailPage = ({ slug, onBack }: { slug: string, onBack: () => void }) => {
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchBlog = async () => {
-      try {
-        const res = await fetch(`/api/blogs/${slug}`);
-        if (res.ok) {
-          const data = await res.json();
-          setBlog(data);
-        }
-      } catch (error) {
-        console.error('Error fetching blog:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBlog();
-    window.scrollTo(0, 0);
-  }, [slug]);
-
-  useEffect(() => {
-    if (blog) {
-      const originalTitle = document.title;
-      
-      // Update Title
-      document.title = `${blog.title} | Hoa Tươi Thanh Ngọc`;
-
-      // Update Meta Description
-      let metaDescription = document.querySelector('meta[name="description"]');
-      const originalDescription = metaDescription?.getAttribute('content');
-      if (!metaDescription) {
-        metaDescription = document.createElement('meta');
-        metaDescription.setAttribute('name', 'description');
-        document.head.appendChild(metaDescription);
-      }
-      metaDescription.setAttribute('content', blog.excerpt || blog.title);
-
-      // Update OG Tags
-      const ogTags = [
-        { property: 'og:title', content: blog.title },
-        { property: 'og:description', content: blog.excerpt || blog.title },
-        { property: 'og:image', content: blog.image || '' },
-        { property: 'og:type', content: 'article' },
-        { property: 'og:url', content: window.location.href }
-      ];
-
-      const originalOgValues: Record<string, string | null> = {};
-
-      ogTags.forEach(tag => {
-        let element = document.querySelector(`meta[property="${tag.property}"]`);
-        originalOgValues[tag.property] = element?.getAttribute('content') || null;
-        if (!element) {
-          element = document.createElement('meta');
-          element.setAttribute('property', tag.property);
-          document.head.appendChild(element);
-        }
-        element.setAttribute('content', tag.content);
-      });
-
-      return () => {
-        document.title = originalTitle;
-        if (metaDescription) {
-          if (originalDescription) {
-            metaDescription.setAttribute('content', originalDescription);
-          } else {
-            metaDescription.remove();
-          }
-        }
-        ogTags.forEach(tag => {
-          let element = document.querySelector(`meta[property="${tag.property}"]`);
-          if (element) {
-            const originalValue = originalOgValues[tag.property];
-            if (originalValue) {
-              element.setAttribute('content', originalValue);
-            } else {
-              element.remove();
-            }
-          }
-        });
-      };
-    }
-  }, [blog]);
-
-  if (loading) {
-    return (
-      <div className="pt-32 pb-24 flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!blog) {
-    return (
-      <div className="pt-32 pb-24 flex flex-col items-center justify-center min-h-[60vh]">
-        <h2 className="text-2xl font-black text-brand-brown mb-6">Không tìm thấy bài viết</h2>
-        <button 
-          onClick={onBack}
-          className="bg-brand-brown text-white px-12 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl"
-        >
-          Quay lại
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="pt-32 pb-24 bg-brand-bg"
-    >
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="flex items-center gap-4 mb-12">
-          <button 
-            onClick={onBack}
-            className="w-12 h-12 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <span className="text-brand-orange font-black tracking-[0.3em] uppercase text-[10px]">Góc Nhìn Nghệ Thuật</span>
-        </div>
-
-        <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-brand-brown/10">
-            <div className="h-80 md:h-[600px] relative">
-              <img 
-                src={optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 1200)} 
-                srcSet={`${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 400)} 400w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 800)} 800w, ${optimizeImageUrl(blog.image || `https://picsum.photos/seed/${blog.id}/1200/800`, 1200)} 1200w`}
-                sizes="100vw"
-                alt={blog.title}
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-brown/90 via-brand-brown/20 to-transparent flex items-end p-10 md:p-16">
-              <div className="max-w-3xl">
-                <span className="bg-brand-blue text-white text-[10px] font-black px-5 py-2 rounded-full uppercase tracking-widest mb-6 inline-block shadow-xl">
-                  {new Date(blog.created_at).toLocaleDateString('vi-VN')}
-                </span>
-                <h1 className="text-4xl md:text-7xl font-serif font-black text-white leading-tight">{blog.title}</h1>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-10 md:p-16">
-            <div className="flex flex-wrap items-center gap-8 mb-12 text-brand-brown/40 text-[10px] font-black uppercase tracking-[0.2em]">
-              <span className="flex items-center gap-2"><Store size={16} className="text-brand-blue" /> Tác giả: {blog.author}</span>
-              <span className="flex items-center gap-2"><Clock size={16} className="text-brand-blue" /> 5 phút đọc</span>
-              <span className="flex items-center gap-2"><Calendar size={16} className="text-brand-blue" /> {new Date(blog.created_at).toLocaleDateString('vi-VN')}</span>
-            </div>
-            
-            <div className="prose prose-stone max-w-none text-brand-brown/70 leading-relaxed text-xl font-medium italic serif">
-              {blog.content.split('\n').map((para, i) => (
-                <p key={i} className="mb-8">{para}</p>
-              ))}
-            </div>
-
-            <div className="mt-20 pt-10 border-t border-brand-brown/5 flex flex-wrap justify-between items-center gap-8">
-              <div className="flex gap-6">
-                <button className="text-brand-blue hover:text-brand-orange font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all">
-                  <Facebook size={20} /> Chia sẻ
-                </button>
-                <button className="text-brand-blue hover:text-brand-orange font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all">
-                  <Instagram size={20} /> Instagram
-                </button>
-              </div>
-              <button 
-                onClick={onBack}
-                className="bg-brand-brown text-white px-12 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-blue transition-all shadow-xl shadow-brand-brown/20"
-              >
-                Quay lại danh sách
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
 // --- Main App ---
 
 export default function App() {
@@ -711,6 +117,8 @@ export default function App() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -744,7 +152,7 @@ export default function App() {
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const ITEMS_PER_PAGE = 12;
-  const BLOGS_PER_PAGE = 6;
+  const BLOGS_PER_PAGE = 3;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -828,6 +236,7 @@ export default function App() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [showMeaningTooltip, setShowMeaningTooltip] = useState(false);
   const relatedScrollRef = useRef<HTMLDivElement>(null);
+  const productDetailsRef = useRef<HTMLDivElement>(null);
 
   const relatedProducts = selectedProduct 
     ? products
@@ -878,6 +287,13 @@ export default function App() {
 
   useEffect(() => {
     setActiveDetailImage(0);
+    if (selectedProduct) {
+      setSelectedColor(selectedProduct.color?.split(',')[0].trim() || null);
+      setSelectedSize(selectedProduct.size?.split(',')[0].trim() || null);
+    } else {
+      setSelectedColor(null);
+      setSelectedSize(null);
+    }
   }, [selectedProduct]);
 
   const fetchProducts = async () => {
@@ -925,17 +341,23 @@ export default function App() {
     }
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, color?: string, size?: string) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      const existing = prev.find((item) => 
+        item.product.id === product.id && 
+        item.selectedColor === (color || null) && 
+        item.selectedSize === (size || null)
+      );
       if (existing) {
         return prev.map((item) =>
-          item.product.id === product.id
+          item.product.id === product.id && 
+          item.selectedColor === (color || null) && 
+          item.selectedSize === (size || null)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, quantity: 1, selectedColor: color || undefined, selectedSize: size || undefined }];
     });
     
     // Show toast
@@ -946,14 +368,16 @@ export default function App() {
     setTimeout(() => toast.remove(), 2000);
   };
 
-  const removeFromCart = (productId: number) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeFromCart = (productId: number, color?: string, size?: string) => {
+    setCart((prev) => prev.filter((item) => 
+      !(item.product.id === productId && item.selectedColor === color && item.selectedSize === size)
+    ));
   };
 
-  const updateCartQuantity = (productId: number, delta: number) => {
+  const updateCartQuantity = (productId: number, delta: number, color?: string, size?: string) => {
     setCart((prev) =>
       prev.map((item) => {
-        if (item.product.id === productId) {
+        if (item.product.id === productId && item.selectedColor === color && item.selectedSize === size) {
           const newQty = Math.max(1, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
@@ -1684,6 +1108,55 @@ export default function App() {
               </div>
             </section>
 
+            {/* Seasonal Promo Banner */}
+            <section className="py-12 bg-white overflow-hidden">
+              <div className="max-w-7xl mx-auto px-4">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8 }}
+                  className="relative rounded-[3rem] md:rounded-[4rem] overflow-hidden h-[400px] md:h-[500px] shadow-2xl group"
+                >
+                  <img 
+                    src={optimizeImageUrl("https://images.unsplash.com/photo-1490750967868-88aa4486c946", 1920)} 
+                    alt="Seasonal Collection" 
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-brown/80 via-brand-brown/40 to-transparent"></div>
+                  
+                  <div className="absolute inset-0 flex items-center px-8 md:px-20">
+                    <div className="max-w-2xl">
+                      <span className="inline-block px-4 py-1.5 bg-brand-orange text-white text-[9px] font-black uppercase tracking-[0.3em] mb-6 rounded-full shadow-lg">
+                        Ưu đãi giới hạn
+                      </span>
+                      <h2 className="text-4xl md:text-6xl font-serif font-black text-white mb-6 leading-tight">
+                        Bộ Sưu Tập <br />
+                        <span className="text-brand-blue italic font-normal">Mùa Xuân</span> 2026
+                      </h2>
+                      <p className="text-white/80 text-base md:text-lg font-medium mb-10 max-w-md leading-relaxed">
+                        Giảm ngay 15% cho tất cả các thiết kế hoa trong bộ sưu tập Mùa Xuân. Mang hương sắc thiên nhiên vào ngôi nhà của bạn.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          setActiveCategory('bo-hoa');
+                          document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="px-10 py-5 bg-white text-brand-brown rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-brand-blue hover:text-white transition-all shadow-2xl flex items-center gap-3 group/btn"
+                      >
+                        Mua ngay <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Decorative elements */}
+                  <div className="absolute top-10 right-10 w-32 h-32 border border-white/20 rounded-full animate-pulse"></div>
+                  <div className="absolute bottom-20 right-20 w-16 h-16 bg-brand-orange/20 rounded-full blur-xl"></div>
+                </motion.div>
+              </div>
+            </section>
+
             {/* Products Grid */}
             <section id="products" className="py-24 bg-brand-bg">
               <div className="max-w-7xl mx-auto px-4">
@@ -1985,10 +1458,10 @@ export default function App() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                whileHover={{ y: -10 }}
+                                whileHover={{ y: -10, scale: 1.02 }}
                                 key={product.id}
                                 onClick={() => setSelectedProduct(product)}
-                                className="group bg-white rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden border border-brand-brown/5 hover:shadow-2xl hover:shadow-brand-brown/10 transition-all duration-500 relative cursor-pointer flex flex-col h-full"
+                                className="group bg-white rounded-[1.25rem] sm:rounded-[2.5rem] overflow-hidden border border-brand-brown/5 hover:shadow-[0_20px_50px_rgba(78,52,46,0.15)] transition-all duration-500 relative cursor-pointer flex flex-col h-full"
                               >
                                 <div className="relative aspect-[4/5] overflow-hidden bg-brand-brown/5">
                                   <img 
@@ -2095,16 +1568,28 @@ export default function App() {
                                     <div className="flex flex-col">
                                       <span className="text-[6px] sm:text-[9px] font-black text-brand-brown/30 uppercase tracking-widest mb-0.5 sm:mb-1">Tình trạng</span>
                                       <span className="text-xs sm:text-lg font-serif font-black text-brand-blue tracking-tight">
-                                        Liên hệ báo giá
+                                        {product.price ? formatPrice(product.price) : 'Liên hệ báo giá'}
                                       </span>
                                     </div>
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); setCurrentView('contact'); window.location.hash = '#contact'; }}
-                                      className="bg-brand-brown text-brand-bg px-3 sm:px-6 py-1.5 sm:py-3 rounded-lg sm:rounded-2xl shadow-2xl shadow-brand-brown/20 hover:bg-brand-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2"
-                                    >
-                                      <Phone size={12} className="sm:size-5" />
-                                      <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest">Liên hệ</span>
-                                    </button>
+                                    <div className="flex gap-2">
+                                      <button 
+                                        onClick={(e) => { 
+                                          e.stopPropagation(); 
+                                          addToCart(product);
+                                        }}
+                                        className="bg-brand-orange text-white p-1.5 sm:p-3 rounded-lg sm:rounded-2xl shadow-xl shadow-brand-orange/20 hover:bg-brand-blue hover:scale-105 active:scale-95 transition-all flex items-center justify-center"
+                                        title="Thêm nhanh vào giỏ"
+                                      >
+                                        <Plus size={12} className="sm:size-5" />
+                                      </button>
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); setCurrentView('contact'); window.location.hash = '#contact'; }}
+                                        className="bg-brand-brown text-brand-bg px-2 sm:px-4 py-1.5 sm:py-3 rounded-lg sm:rounded-2xl shadow-2xl shadow-brand-brown/20 hover:bg-brand-blue hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2"
+                                      >
+                                        <Phone size={12} className="sm:size-5" />
+                                        <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest">Liên hệ</span>
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               </motion.div>
@@ -2249,15 +1734,15 @@ export default function App() {
                         )}
                       </div>
                       <div className="p-10 flex flex-col flex-1">
-                        <div className="flex items-center gap-6 text-brand-brown/40 text-[10px] font-black uppercase tracking-widest mb-6">
-                          <span className="flex items-center gap-2">
-                            <User size={14} className="text-brand-blue" />
-                            {blog.author}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <Calendar size={14} className="text-brand-blue" />
-                            {new Date(blog.created_at).toLocaleDateString('vi-VN')}
-                          </span>
+                        <div className="flex items-center gap-6 mb-8">
+                          <div className="flex items-center gap-3 bg-brand-blue/5 px-4 py-2 rounded-xl">
+                            <User size={16} className="text-brand-blue" />
+                            <span className="text-[11px] font-black text-brand-brown uppercase tracking-widest">{blog.author}</span>
+                          </div>
+                          <div className="flex items-center gap-3 bg-brand-orange/5 px-4 py-2 rounded-xl">
+                            <Calendar size={16} className="text-brand-orange" />
+                            <span className="text-[11px] font-black text-brand-brown uppercase tracking-widest">{new Date(blog.created_at).toLocaleDateString('vi-VN')}</span>
+                          </div>
                         </div>
                         <h3 className="text-2xl font-serif font-black text-brand-brown mb-4 group-hover:text-brand-blue transition-colors line-clamp-2 leading-tight">
                           {blog.title}
@@ -2380,19 +1865,16 @@ export default function App() {
           </motion.div>
         )}
 
-        {currentView === 'about' && <AboutPage onBack={() => { window.location.hash = '#home'; setCurrentView('home'); }} />}
-        {currentView === 'contact' && <ContactPage onBack={() => { window.location.hash = '#home'; setCurrentView('home'); }} />}
+        {currentView === 'about' && (
+          <AboutPage setCurrentView={setCurrentView} />
+        )}
+
+        {currentView === 'contact' && (
+          <ContactPage />
+        )}
+
         {currentView === 'offers' && (
-          <OffersPage 
-            onBack={() => { window.location.hash = '#home'; setCurrentView('home'); }} 
-            onShopNow={() => {
-              window.location.hash = '#home';
-              setCurrentView('home');
-              setTimeout(() => {
-                document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
-              }, 100);
-            }}
-          />
+          <OffersPage setCurrentView={setCurrentView} />
         )}
         {currentView === 'blog' && selectedBlogSlug && (
           <BlogDetailPage 
@@ -2932,7 +2414,7 @@ export default function App() {
       {/* Product Details Modal */}
       <AnimatePresence>
         {selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2944,7 +2426,7 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-brand-bg rounded-[2rem] sm:rounded-[3rem] shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row border border-brand-brown/10"
+              className="relative bg-brand-bg rounded-[2rem] sm:rounded-[3rem] shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row border border-brand-brown/10"
             >
               <button 
                 onClick={() => setSelectedProduct(null)}
@@ -3030,7 +2512,42 @@ export default function App() {
                 )}
               </div>
               
-              <div className="w-full md:w-1/2 p-6 md:p-16 flex flex-col overflow-y-auto max-h-[90vh] md:max-h-none">
+              <div 
+                ref={productDetailsRef}
+                className="w-full md:w-1/2 p-6 md:p-16 flex flex-col flex-1 overflow-y-auto md:max-h-none"
+              >
+                {/* Breadcrumbs */}
+                <nav className="flex items-center gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-brand-brown/40 mb-6 md:mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                  <button 
+                    onClick={() => {
+                      setCurrentView('home');
+                      setSelectedProduct(null);
+                      window.location.hash = '#home';
+                    }}
+                    className="hover:text-brand-blue transition-colors flex items-center gap-1.5"
+                  >
+                    <Home size={12} className="md:size-3.5" />
+                    <span>Trang Chủ</span>
+                  </button>
+                  <ChevronRight size={10} className="text-brand-brown/20 flex-shrink-0" />
+                  <button 
+                    onClick={() => {
+                      setActiveCategory(selectedProduct.category);
+                      setCurrentView('home');
+                      setSelectedProduct(null);
+                      setTimeout(() => {
+                        const element = document.getElementById('products');
+                        if (element) element.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                    className="hover:text-brand-blue transition-colors flex-shrink-0"
+                  >
+                    {CATEGORIES.find(c => c.id === selectedProduct.category)?.name || 'Sản phẩm'}
+                  </button>
+                  <ChevronRight size={10} className="text-brand-brown/20 flex-shrink-0" />
+                  <span className="text-brand-blue truncate max-w-[120px] md:max-w-[200px] flex-shrink-0">{selectedProduct.name}</span>
+                </nav>
+
                 <header className="mb-6 md:mb-10">
                   <span className="text-brand-blue font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] mb-2 md:mb-4 block">
                     {CATEGORIES.find(c => c.id === selectedProduct.category)?.name || 'Sản phẩm'}
@@ -3078,14 +2595,40 @@ export default function App() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 md:gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
                     <div>
-                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-2 md:mb-3">Màu Sắc</h3>
-                      <p className="text-brand-brown font-bold text-base md:text-lg">{selectedProduct.color || "Đa dạng"}</p>
+                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-3 md:mb-4">Màu Sắc</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {(selectedProduct.color || "Đa dạng").split(',').map((c) => {
+                          const color = c.trim();
+                          return (
+                            <button
+                              key={color}
+                              onClick={() => setSelectedColor(color)}
+                              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border-2 ${selectedColor === color ? 'bg-brand-brown text-white border-brand-brown shadow-lg scale-105' : 'bg-white text-brand-brown border-brand-brown/5 hover:border-brand-blue/30'}`}
+                            >
+                              {color}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div>
-                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-2 md:mb-3">Kích Thước</h3>
-                      <p className="text-brand-brown font-bold text-base md:text-lg">{selectedProduct.size || "Tiêu chuẩn"}</p>
+                      <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-brand-brown/40 mb-3 md:mb-4">Kích Thước</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {(selectedProduct.size || "Tiêu chuẩn").split(',').map((s) => {
+                          const size = s.trim();
+                          return (
+                            <button
+                              key={size}
+                              onClick={() => setSelectedSize(size)}
+                              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border-2 ${selectedSize === size ? 'bg-brand-blue text-white border-brand-blue shadow-lg scale-105' : 'bg-white text-brand-brown border-brand-brown/5 hover:border-brand-blue/30'}`}
+                            >
+                              {size}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -3125,65 +2668,75 @@ export default function App() {
 
                   {/* Related Products Section */}
                   {relatedProducts.length > 0 && (
-                    <div className="pt-10 border-t border-brand-brown/5">
+                    <div className="pt-12 mt-12 border-t border-brand-brown/10 bg-brand-paper/30 -mx-6 md:-mx-16 px-6 md:px-16 pb-12">
                       <div className="flex items-center justify-between mb-8">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-orange">Sản phẩm liên quan</h4>
-                        <div className="flex gap-2">
+                        <div>
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-orange mb-2">Gợi ý cho bạn</h4>
+                          <h3 className="text-xl md:text-2xl font-black text-brand-brown uppercase tracking-widest">Sản phẩm liên quan</h3>
+                        </div>
+                        <div className="flex gap-3">
                           <button 
                             onClick={() => scrollRelated('left')}
-                            className="w-8 h-8 rounded-full bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-md"
+                            className="w-10 h-10 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg hover:shadow-brand-blue/20"
                           >
-                            <ChevronLeft size={16} />
+                            <ChevronLeft size={20} />
                           </button>
                           <button 
                             onClick={() => scrollRelated('right')}
-                            className="w-8 h-8 rounded-full bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-md"
+                            className="w-10 h-10 rounded-2xl bg-white border border-brand-brown/5 flex items-center justify-center text-brand-brown hover:bg-brand-blue hover:text-white transition-all shadow-lg hover:shadow-brand-blue/20"
                           >
-                            <ChevronRight size={16} />
+                            <ChevronRight size={20} />
                           </button>
                         </div>
                       </div>
                       
                       <div 
                         ref={relatedScrollRef}
-                        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory"
+                        className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 snap-x snap-mandatory"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       >
                         {relatedProducts.map((p) => (
-                          <div 
+                          <motion.div 
                             key={p.id} 
+                            initial={{ opacity: 0, x: 20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            whileHover={{ y: -5, scale: 1.02 }}
                             onClick={() => {
                               setSelectedProduct(p);
                               setActiveDetailImage(0);
                               if (relatedScrollRef.current) {
                                 relatedScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
                               }
+                              if (productDetailsRef.current) {
+                                productDetailsRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
                             }}
-                            className="min-w-[140px] sm:min-w-[180px] group cursor-pointer snap-start"
+                            className="min-w-[160px] md:min-w-[220px] group cursor-pointer snap-start"
                           >
-                            <div className="aspect-[4/5] rounded-2xl overflow-hidden mb-3 bg-brand-paper">
+                            <div className="aspect-[4/5] rounded-[2rem] overflow-hidden mb-4 bg-white shadow-md border border-brand-brown/5 group-hover:shadow-[0_15px_30px_rgba(78,52,46,0.12)] transition-all duration-500">
                               <img 
-                                src={optimizeImageUrl(p.image, 300)} 
+                                src={optimizeImageUrl(p.image, 400)} 
                                 alt={p.name}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:animate-shake"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 loading="lazy"
                                 referrerPolicy="no-referrer"
                               />
                             </div>
-                            <h5 className="text-[10px] font-bold text-brand-brown truncate group-hover:text-brand-blue transition-colors">{p.name}</h5>
-                            <p className="text-[9px] font-black text-brand-orange mt-1">{formatPrice(p.price)}</p>
-                          </div>
+                            <h5 className="text-xs md:text-sm font-black text-brand-brown truncate group-hover:text-brand-blue transition-colors uppercase tracking-wider">{p.name}</h5>
+                            <p className="text-[10px] md:text-xs font-black text-brand-orange mt-1 tracking-widest">{formatPrice(p.price)}</p>
+                          </motion.div>
                         ))}
                       </div>
                     </div>
                   )}
                 </section>
                 
-                <footer className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-brand-brown/5">
-                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6 md:mb-8">
+                <footer className="mt-auto pt-6 md:pt-8 border-t border-brand-brown/5 sticky bottom-0 bg-brand-bg/95 backdrop-blur-md -mx-6 md:-mx-16 px-6 md:px-16 pb-6 md:pb-8 z-20">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
                     <button 
                       onClick={() => {
-                        addToCart(selectedProduct);
+                        addToCart(selectedProduct, selectedColor || undefined, selectedSize || undefined);
                         setShowCart(true);
                         setSelectedProduct(null);
                       }}
@@ -3194,7 +2747,7 @@ export default function App() {
                     </button>
                     <button 
                       onClick={() => {
-                        addToCart(selectedProduct);
+                        addToCart(selectedProduct, selectedColor || undefined, selectedSize || undefined);
                       }}
                       className="flex-1 bg-brand-blue text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-brand-orange transition-all shadow-xl shadow-brand-blue/20 flex items-center justify-center gap-2 md:gap-3"
                     >
@@ -3202,20 +2755,20 @@ export default function App() {
                       Thêm vào giỏ
                     </button>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                  <div className="flex flex-col sm:flex-row gap-4 mb-6">
                     <button 
                       onClick={() => {
                         setCurrentView('contact');
                         window.location.hash = '#contact';
                         setSelectedProduct(null);
                       }}
-                      className="flex-1 bg-brand-paper text-brand-brown py-5 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-brown hover:text-white transition-all shadow-xl border border-brand-brown/5 flex items-center justify-center gap-3"
+                      className="flex-1 bg-brand-paper text-brand-brown py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[9px] md:text-[10px] hover:bg-brand-brown hover:text-white transition-all shadow-xl border border-brand-brown/5 flex items-center justify-center gap-3"
                     >
-                      <Phone size={20} />
+                      <Phone size={18} className="md:size-5" />
                       Liên hệ tư vấn
                     </button>
                   </div>
-                  <p className="text-[9px] font-black text-brand-brown/20 uppercase tracking-widest text-center">
+                  <p className="text-[8px] font-black text-brand-brown/20 uppercase tracking-widest text-center">
                     &copy; {new Date().getFullYear()} - HOA TƯƠI THANH NGỌC
                   </p>
                 </footer>
@@ -3802,13 +3355,13 @@ export default function App() {
                     {[
                       { step: 1, icon: ShoppingBag, label: 'Giỏ hàng' },
                       { step: 2, icon: Truck, label: 'Giao hàng' },
-                      { step: 3, icon: CreditCard, label: 'Xác nhận' }
+                      { step: 3, icon: CreditCard, label: 'Thanh toán' }
                     ].map((item) => (
                       <div key={item.step} className="relative z-10 flex flex-col items-center gap-2">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${checkoutStep >= item.step ? 'bg-brand-blue text-white shadow-lg scale-110' : 'bg-brand-paper text-brand-brown/20 border border-brand-brown/5'}`}>
-                          <item.icon size={18} />
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${checkoutStep >= item.step ? 'bg-brand-blue text-white shadow-xl scale-110' : 'bg-brand-paper text-brand-brown/20 border border-brand-brown/5'}`}>
+                          <item.icon size={20} />
                         </div>
-                        <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${checkoutStep >= item.step ? 'text-brand-blue' : 'text-brand-brown/20'}`}>
+                        <span className={`text-[9px] font-black uppercase tracking-widest transition-all ${checkoutStep >= item.step ? 'text-brand-blue' : 'text-brand-brown/20'}`}>
                           {item.label}
                         </span>
                       </div>
@@ -3837,7 +3390,7 @@ export default function App() {
                     ) : (
                       <div className="space-y-4">
                         {cart.map((item) => (
-                          <div key={item.product.id} className="flex items-center gap-6 p-4 bg-white rounded-3xl border border-brand-brown/5 shadow-sm group hover:shadow-md transition-all">
+                          <div key={`${item.product.id}-${item.selectedColor || 'none'}-${item.selectedSize || 'none'}`} className="flex items-center gap-6 p-4 bg-white rounded-3xl border border-brand-brown/5 shadow-sm group hover:shadow-md transition-all">
                             <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-brand-brown/5">
                               <img 
                                 src={optimizeImageUrl(item.product.image, 200)} 
@@ -3851,27 +3404,39 @@ export default function App() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-black text-brand-brown truncate">{item.product.name}</h4>
-                              <p className="text-[10px] text-brand-brown/40 font-bold uppercase tracking-widest mt-1">
-                                {CATEGORIES.find(c => c.id === item.product.category)?.name}
-                              </p>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-brand-brown/40">
+                                  {CATEGORIES.find(c => c.id === item.product.category)?.name}
+                                </span>
+                                {item.selectedColor && (
+                                  <span className="text-[8px] font-black uppercase tracking-widest bg-brand-brown/5 text-brand-brown px-2 py-0.5 rounded-full">
+                                    Màu: {item.selectedColor}
+                                  </span>
+                                )}
+                                {item.selectedSize && (
+                                  <span className="text-[8px] font-black uppercase tracking-widest bg-brand-blue/5 text-brand-blue px-2 py-0.5 rounded-full">
+                                    Size: {item.selectedSize}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-4 mt-4">
                                 <div className="flex items-center bg-brand-paper rounded-xl p-1 border border-brand-brown/5">
                                   <button 
-                                    onClick={() => updateCartQuantity(item.product.id, -1)}
+                                    onClick={() => updateCartQuantity(item.product.id, -1, item.selectedColor, item.selectedSize)}
                                     className="w-8 h-8 flex items-center justify-center text-brand-brown hover:bg-white rounded-lg transition-all"
                                   >
                                     -
                                   </button>
                                   <span className="w-10 text-center font-black text-xs">{item.quantity}</span>
                                   <button 
-                                    onClick={() => updateCartQuantity(item.product.id, 1)}
+                                    onClick={() => updateCartQuantity(item.product.id, 1, item.selectedColor, item.selectedSize)}
                                     className="w-8 h-8 flex items-center justify-center text-brand-brown hover:bg-white rounded-lg transition-all"
                                   >
                                     +
                                   </button>
                                 </div>
                                 <button 
-                                  onClick={() => removeFromCart(item.product.id)}
+                                  onClick={() => removeFromCart(item.product.id, item.selectedColor, item.selectedSize)}
                                   className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline"
                                 >
                                   Xóa

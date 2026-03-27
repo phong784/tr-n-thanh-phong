@@ -111,7 +111,8 @@ try {
     { key: 'category_image_hoa-khai-truong', value: 'https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf?auto=format&fit=crop&q=80&w=400&fm=webp' },
     { key: 'category_image_gio-hoa', value: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=400&fm=webp' },
     { key: 'category_image_hoa-chia-buon', value: 'https://images.unsplash.com/photo-1516589174184-c685266e430c?auto=format&fit=crop&q=80&w=400&fm=webp' },
-    { key: 'category_image_hoa-cuoi', value: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=400&fm=webp' }
+    { key: 'category_image_hoa-cuoi', value: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=400&fm=webp' },
+    { key: 'all_products_banner', value: 'https://images.unsplash.com/photo-1519378018457-4c29a3a2ecdf' }
   ];
 
   const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -674,9 +675,12 @@ async function startServer() {
     
     // Only optimize local files
     if (src.startsWith('/')) {
-      // Prevent directory traversal attacks
-      const normalizedPath = path.normalize(src).replace(/^(\.\.[\/\\])+/, '');
+      // Prevent directory traversal attacks and normalize path
+      // Remove leading slash for path.join to work correctly with publicDir
+      const normalizedPath = path.normalize(src).replace(/^(\.\.[\/\\])+/, '').replace(/^[\/\\]+/, '');
       const filePath = path.join(publicDir, normalizedPath);
+      
+      console.log(`Optimizing local image: ${src} -> ${filePath}`);
       
       if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
         try {
